@@ -21,7 +21,7 @@
 /// stddoc < main.cpp > main.html
 /// ~~~~
 /// Then open main.html in a browser. Next, at a development command line, go to 
-/// a directoy you'd like to do your build in, I suggest a sibling to the gusteau
+/// a directory you'd like to do your build in, I suggest a sibling to the gusteau
 /// directory,and type
 ///
 /// ~~~~
@@ -153,12 +153,12 @@ public:
     GraphicsContext& root_graphics_context;
     UIContext& ui;
     StateContext state;
-	RenderContext render;
+    RenderContext render;
 
-	StateCommandQueue state_commands;
+    StateCommandQueue state_commands;
     RenderCommandQueue render_commands;
 
-	bool join_now{};
+    bool join_now{};
 };
 
 /// The state can only be communicated with via a fifo. The fifo is
@@ -200,19 +200,19 @@ int main(int argc, char** argv) try
 {
     std::unique_ptr<GraphicsContext> root_graphics_context(CreateRootGraphicsContext());
     std::unique_ptr<UIContext> ui_context(CreateUIContext(*root_graphics_context.get()));
-	ApplicationContext context(*root_graphics_context.get(), *ui_context.get());
+    ApplicationContext context(*root_graphics_context.get(), *ui_context.get());
 
-	std::vector<std::thread> jobs(2);
-	jobs.emplace_back(std::thread([&context]() { StateEngine(context); }));
-	jobs.emplace_back(std::thread([&context]() { RenderEngine(context); }));
+    std::vector<std::thread> jobs(2);
+    jobs.emplace_back(std::thread([&context]() { StateEngine(context); }));
+    jobs.emplace_back(std::thread([&context]() { RenderEngine(context); }));
 
     UIEngine(context);
 
-	for (auto& j : jobs)
-		if (j.joinable())
-			j.join();
+    for (auto& j : jobs)
+        if (j.joinable())
+            j.join();
 
-	return 0;
+    return 0;
 }
 catch (std::exception& exc)
 {
