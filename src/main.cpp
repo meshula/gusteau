@@ -14,8 +14,8 @@
 /// We won't concern ourselves at the moment with the contents of the provided
 /// cmake script, but to get started let's do two things.
 ///
-/// First, let's generate a version of this file readable in a browser. At a
-/// command line, type 
+/// First, let's generate a version of this file readable in a browser. We'll need
+/// stddoc, from here: https://github.com/r-lyeh/stddoc.c At a command line, type 
 /// ~~~~
 /// stddoc < main.cpp > main.html
 /// ~~~~
