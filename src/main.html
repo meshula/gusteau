@@ -1,0 +1,252 @@
+<meta charset='utf-8' emacsmode='-*- markdown -*-'>
+<link rel='stylesheet' href='https://casual-effects.com/markdeep/latest/apidoc.css?'>
+<style>.backtick, .tilde {overflow-x: auto;} .longTOC {overflow-x: hidden;}</style>
+Setting up build systems is unnecessarily complicated. IDEs expose lots of 
+individual settings in mysterious locations that can vary from release to
+release. Command line build systems are plagued by poor documentation, ad hoc
+scripting languages, and a relative lack of portability between platforms.
+
+The focus of this book is on the architecture of our program, not on how it
+is built. In that spirit, cmake has been selected as the simultaneously least 
+broken and most portable of the command line systems as it is a meta-build
+system - it builds reasonably functional build scripts in a platform's native
+dialect, whether it be make files, xcode projects, or visual studio solutions.
+
+We won't concern ourselves at the moment with the contents of the provided
+cmake script, but to get started let's do two things.
+
+First, let's generate a version of this file readable in a browser. At a
+command line, type 
+~~~~
+stddoc < main.cpp > main.html
+~~~~
+Then open main.html in a browser. Next, at a development command line, go to 
+a directoy you'd like to do your build in, I susggest a sibling to the gusteau
+directory,and type
+
+~~~~
+mkdir gusteau-build-chapter-1
+cd gusteau-build-chapter-1
+cmake ../gusteau
+~~~~
+Note that for this to work properly on Windows, the development command line
+must match the build you want. So run the Development Tools for x64 command
+line that came with the version of visual studio you are using. The command
+line for cmake on windows will actually need to look like -
+~~~~
+cmake ..\gusteau -G "Visual Studio 15 2017 Win64"
+~~~~
+
+Similarly on mac, you'll need to use xcode-select to pick the compiler you
+want cmake to use.
+
+When cmake completes go ahead and build the resulting project.
+
+
+Separate the state of the program from the user interface
+Separate rendering from the state of the program
+Program state should be updated via a channel
+We'll make a control queue out of a std::deque, and for now, will encode our commands as strings.
+~~~C++
+#include <deque>
+#include <string>
+
+typedef std::deque<std::string> StateCommandQueue;
+
+~~~
+The user interface will issue a command by placing it in a channel
+The state thread is waiting on the channel with a conditional WaitOne
+It decants the command from the channel and runs it, and repeats until the channel is empty
+The rendering thread renders on demand but doesn't block the UI thread
+so the basic structure is a main that launches a UI thread, a state thread, and a render thread.
+There must be an overall application context. It is composed of blocks which
+can only be mutated by their owners.
+The contexts for state, render, and UI context have private contents, hidden
+in a detail class.
+~~~C++
+class StateContext
+{
+	struct Detail;
+	Detail* m_{};
+public:
+	StateContext();
+	~StateContext();
+};
+
+~~~
+There's no need to use a unique_ptr for Detail, the context object destructor
+is responsible for removing it. Using a unique_ptr requires exposing the
+contents of the Detail class, and so must be globally available, or 
+known to the context object destructor. Since the idea is to not make it
+globally available, and since the context destructor will have to know 
+about it anyway, the unique_ptr adds no value.
+
+The detail objects can be lazily created by the state object when
+needed. Having a simple pointer here makes the context object itself
+lightweight and trivially constructable.
+~~~C++
+class RenderContext
+{
+	struct Detail;
+	Detail* m_{};
+public:
+	RenderContext();
+	~RenderContext();
+};
+
+class UIContext
+{
+	struct Detail;
+	Detail* m_{};
+public:
+	UIContext();
+	~UIContext();
+};
+
+~~~
+Various systems are going to need access to the graphics context for
+rendering.
+~~~C++
+class GraphicsContext
+{
+   struct Detail;
+   Detail* m_{};
+public:
+   GraphicsContext();
+   ~GraphicsContext();
+};
+
+~~~
+The application context bundles the context objects, and the running state
+of the application itself
+~~~C++
+class ApplicationContext
+{
+public:	
+	ApplicationContext() = default;
+	~ApplicationContext() = default;
+
+   GraphicsContext root_graphics_context;
+	StateContext state;
+	RenderContext render;
+	UIContext ui;
+
+	StateCommandQueue state_commands;
+
+	bool join_now{};
+};
+
+~~~
+The state can only be communicated with via a fifo. The fifo is
+writeable by any engine, and readable only by the state object.
+That will be enforced by the interface to the StateCommandQueue.
+
+The main program scopes an ApplicationContext and vector of threads that
+exist for the duration of the program's run.
+
+The threads themselves capture a reference to the ApplicationContext
+and will exit when the join_now flag is set on the context.
+
+~~~C++
+#include <thread>
+#include <vector>
+#include <iostream>
+
+GraphicsContext RootGraphicsContext();
+
+~~~
+It will be the job of the ui_engine to set the join_now flag on the context
+which will let all the other engines know it's time to shut down.
+
+We'll name the engines up front, and come back to them in a moment.
+~~~C++
+void StateEngine(ApplicationContext&);
+void RenderEngine(ApplicationContext&);
+void UIEngine(ApplicationContext&);
+
+int main(int argc, char** argv)
+{
+	ApplicationContext context;
+   context.root_graphics_context = RootGraphicsContext();
+
+	std::vector<std::thread> jobs;
+	jobs.emplace_back(std::thread([&context]() { StateEngine(context); }));
+	jobs.emplace_back(std::thread([&context]() { RenderEngine(context); }));
+	jobs.emplace_back(std::thread([&context]() { UIEngine(context); }));
+	for (auto& j : jobs)
+		if (j.joinable())
+			j.join();
+
+	return 0;
+}
+~~~
+Next, let's head over to the UIContext to see what's up.
+
+The UIContext is going to hold everything the user can see, starting with
+the window.
+GLEW will provide the GL bindings.
+~~~C++
+#include <gl/GLEW.h>
+
+~~~
+For this demonstration, the window will be maintained by GLFW.
+~~~C++
+#include <GLFW/glfw3.h>
+
+static void error_callback(int error, const char* description)
+{
+   fprintf(stderr, "Error %d: %s\n", error, description);
+}
+
+~~~
+THe glfw flags should be set consistently and to a relatively modern version,
+so a function will be provided up front for that.
+Detail is going to maintain a root graphics context that all GL contexts
+can share. This will be useful later when more than one rendering system
+is in place.
+~~~C++
+void setGlfwFlags()
+{
+   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+   glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+#if __APPLE__
+   glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+#endif
+}
+
+~~~
+The GraphicsContext object will contain an invisible root window
+with a GL context that can be shared with other GL windows and offscreen
+render contexts, to enable sharing of resources like textures and
+vertex data.
+~~~C++
+class GraphicsContext::Detail
+{
+public:
+   Detail() = default;
+   Detail(Detail&&) = default;
+   ~Detail()
+   {
+       if (_window)
+       {
+           glfwDestroyWindow(_window);
+       }
+   }
+   GLFWwindow* _window{};
+};
+~~~
+The UIContext will contain the main user interface winow.
+~~~C++
+struct UIContext::Detail
+{
+   Detail()
+   {
+       // Setup window
+   }
+
+   GLFWwindow* _window {};
+};
+~~~
+<script>markdeepOptions={tocStyle:'long'};</script>
+<!-- Markdeep: --><script src='https://casual-effects.com/markdeep/latest/markdeep.min.js?'></script>
