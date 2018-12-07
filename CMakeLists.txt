@@ -53,6 +53,8 @@ else()
     target_compile_definitions(Gusteau-chapter-1 PUBLIC PLATFORM_LINUX)
 endif()
 
+target_compile_definitions(Gusteau-chapter-1 PUBLIC GLEW_STATIC)
+
 target_include_directories(Gusteau-chapter-1 PRIVATE
     ${GUSTEAU_ROOT}/src/glew/include
     ${GLFW_INCLUDE_DIR}

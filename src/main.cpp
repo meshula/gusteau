@@ -249,11 +249,10 @@ void setGlfwFlags()
 {
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 #if __APPLE__
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 #endif
-    glfwSwapInterval(1);
 }
 
 /// The GraphicsContext object will contain an invisible root window
@@ -304,6 +303,7 @@ public:
 
         GLFWwindow* window = glfwCreateWindow(16, 16, "Root graphics context", NULL, NULL);
         glfwMakeContextCurrent(window);
+        glfwSwapInterval(1); // must be set when a window's context is current
 
         glewExperimental = GL_TRUE;
         glewInit(); // create GLEW after the context has been created
@@ -418,7 +418,7 @@ struct UIContext::Detail
 
     void Render(ApplicationContext& context)
     {
-        if (!_window)
+        if (!_window || context.join_now)
             return;
 
         glfwMakeContextCurrent(_window);
