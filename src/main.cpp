@@ -74,11 +74,11 @@ typedef lab::ConcurrentQueue<std::string> RenderCommandQueue;
 ///<C++
 class StateContext
 {
-	struct Detail;
-	Detail* m_{};
+    struct Detail;
+    Detail* m_{};
 public:
-	StateContext();
-	~StateContext();
+    StateContext();
+    ~StateContext();
 };
 
 /// There's no need to use a unique_ptr for Detail, the context object destructor
@@ -94,11 +94,11 @@ public:
 ///<C++
 class RenderContext
 {
-	struct Detail;
-	Detail* m_{};
+    struct Detail;
+    Detail* m_{};
 public:
-	RenderContext();
-	~RenderContext();
+    RenderContext();
+    ~RenderContext();
 };
 
 /// Various systems are going to need access to the graphics context for
@@ -125,8 +125,8 @@ public:
     UIContext(GraphicsContext& context,
         const std::string& window_name, int width, int height);
     ~UIContext();
-    void Render(ApplicationContext& context);
-    virtual void Run() = 0;
+    void Render(ApplicationContext&);
+    virtual void Run(ApplicationContext&) = 0;
 };
 
 /// Factory functions are used to create contexts. The application's main() is the
@@ -228,7 +228,7 @@ catch (std::exception& exc)
 /// the window.
 /// GLEW will provide the GL bindings.
 ///<C++
-#include <GL/GLEW.h>
+#include <GL/glew.h>
 
 /// For this demonstration, the window will be maintained by GLFW.
 ///<C++
@@ -362,10 +362,10 @@ struct UIContext::Detail
     GLFWwindow* _window{};
     ImGuiContext* _context{};
     std::string _window_name;
-    std::function<void()> _run;
+    std::function<void(ApplicationContext&)> _run;
 
     Detail(GraphicsContext& context,
-           std::function<void()> run,
+           std::function<void(ApplicationContext&)> run,
            const std::string& window_name, int width, int height)
         : _window_name(window_name), _run(run)
     {
@@ -464,7 +464,7 @@ struct UIContext::Detail
         glClearColor(clear_color.x, clear_color.y, clear_color.z, clear_color.w);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        if (_run) _run();
+        if (_run) _run(context);
 
         ImGui::End(); // end the main window
         ImGui::Render();
@@ -476,7 +476,7 @@ struct UIContext::Detail
 
 UIContext::UIContext(GraphicsContext& context,
     const std::string& window_name, int width, int height)
-    : m_(new Detail(context, [this]() { Run(); }, window_name, width, height))
+    : m_(new Detail(context, [this](ApplicationContext& ac) { Run(ac); }, window_name, width, height))
 {
 }
 
@@ -534,21 +534,18 @@ void RenderEngine(ApplicationContext&) {}
 
 class GusteauChapter1UI : public UIContext
 {
-    ApplicationContext& _ac;
-
 public:
-    GusteauChapter1UI(ApplicationContext& ac, GraphicsContext& gc,
+    GusteauChapter1UI(GraphicsContext& gc,
         const std::string& window_name, int width, int height)
         : UIContext(gc, window_name, width, height)
-        , _ac(ac)
         {}
 
-    virtual void Run() override
+    virtual void Run(ApplicationContext& ac) override
     {
         ImGui::Text("Hello world");
         if (ImGui::Button("Quit"))
         {
-            _ac.join_now = true;
+            ac.join_now = true;
         }
     }
 };

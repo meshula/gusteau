@@ -55,6 +55,7 @@ endif()
 
 target_include_directories(Gusteau-chapter-1 PRIVATE
     ${GUSTEAU_ROOT}/src/glew/include
+    ${GLFW_INCLUDE_DIR}
     ${GUSTEAU_ROOT}/src
     ${GUSTEAU_ROOT}/src/imgui)
 
