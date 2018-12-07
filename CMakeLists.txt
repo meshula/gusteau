@@ -2,7 +2,7 @@
 cmake_minimum_required(VERSION 3.4)
 project(Gusteau-chapter-1)
 
-set(LABWORKBENCH_ROOT "${CMAKE_CURRENT_SOURCE_DIR}")
+set(GUSTEAU_ROOT "${CMAKE_CURRENT_SOURCE_DIR}")
 
 # override cmake install prefix if it's not set,
 # per: http://public.kitware.com/pipermail/cmake/2010-December/041135.html
@@ -32,9 +32,13 @@ include(CXXDefaults)
 add_definitions(${_PXR_CXX_DEFINITIONS})
 set(CMAKE_CXX_FLAGS "${_PXR_CXX_FLAGS} ${CMAKE_CXX_FLAGS}")
 
-include(Packages)
+#include(Packages)
 target_sources(Gusteau-chapter-1 PRIVATE 
-    src/main.cpp src/imgui/imgui.cpp src/imgui/imgui_draw.cpp src/imgui/imgui_impl_glfw_gl3.cpp)
+    src/main.cpp 
+    src/imgui/imgui.cpp 
+    src/imgui/imgui_draw.cpp 
+    src/imgui/imgui_impl_glfw_gl3.cpp
+    src/glew/glew.c)
 
 target_compile_definitions(Gusteau-chapter-1 PUBLIC ${USD_DEFINES})
 
@@ -50,18 +54,16 @@ else()
 endif()
 
 target_include_directories(Gusteau-chapter-1 PRIVATE
-    ${LOCAL_ROOT}/include
-    ${LABWORKBENCH_ROOT}/src
-    ${LABWORKBENCH_ROOT}/src/imgui)
+    ${GUSTEAU_ROOT}/src/glew/include
+    ${GUSTEAU_ROOT}/src
+    ${GUSTEAU_ROOT}/src/imgui)
 
 # @TODO work out why USD requires linking to boost python and python
 # if not linking to a python specific module, and create a pull request...
 
 target_link_libraries(Gusteau-chapter-1 debug
-    ${OPENGL_LIBRARIES} ${GLEW_LIBRARY}
     ${GLFW_LIBRARY_RELEASE})
 target_link_libraries(Gusteau-chapter-1 optimized
-    ${OPENGL_LIBRARIES} ${GLEW_LIBRARY}
     ${GLFW_LIBRARY_RELEASE})
 
 if (MSVC_IDE)
