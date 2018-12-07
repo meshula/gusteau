@@ -32,7 +32,7 @@ include(CXXDefaults)
 add_definitions(${_PXR_CXX_DEFINITIONS})
 set(CMAKE_CXX_FLAGS "${_PXR_CXX_FLAGS} ${CMAKE_CXX_FLAGS}")
 
-#include(Packages)
+include(Packages)
 target_sources(Gusteau-chapter-1 PRIVATE 
     src/main.cpp 
     src/imgui/imgui.cpp 
@@ -58,13 +58,14 @@ target_include_directories(Gusteau-chapter-1 PRIVATE
     ${GUSTEAU_ROOT}/src
     ${GUSTEAU_ROOT}/src/imgui)
 
-# @TODO work out why USD requires linking to boost python and python
-# if not linking to a python specific module, and create a pull request...
+if (UNIX)
+    set(PTHREAD_LIB pthread)
+endif()
 
 target_link_libraries(Gusteau-chapter-1 debug
-    ${GLFW_LIBRARY_RELEASE})
+    ${OPENGL_LIBRARIES} ${GLFW_LIBRARY_RELEASE} ${PTHREAD_LIB})
 target_link_libraries(Gusteau-chapter-1 optimized
-    ${GLFW_LIBRARY_RELEASE})
+    ${OPENGL_LIBRARIES} ${GLFW_LIBRARY_RELEASE} ${PTHREAD_LIB})
 
 if (MSVC_IDE)
     # hack to get around the "Debug" and "Release" directories cmake tries to add on Windows

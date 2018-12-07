@@ -48,7 +48,9 @@
 /// Program state should be updated via a channel
 
 #include <deque>
+#include <functional>
 #include <string>
+#include <cstring>
 #include <memory>
 
 /// We'll make a control queue out of a std::deque, and for now, will encode our commands as strings.
@@ -226,7 +228,7 @@ catch (std::exception& exc)
 /// the window.
 /// GLEW will provide the GL bindings.
 ///<C++
-#include <gl/GLEW.h>
+#include <GL/GLEW.h>
 
 /// For this demonstration, the window will be maintained by GLFW.
 ///<C++
@@ -474,7 +476,7 @@ struct UIContext::Detail
 
 UIContext::UIContext(GraphicsContext& context,
     const std::string& window_name, int width, int height)
-    : m_(new Detail(context, []() { Run(); }, window_name, width, height))
+    : m_(new Detail(context, [this]() { Run(); }, window_name, width, height))
 {
 }
 
@@ -486,12 +488,6 @@ UIContext::~UIContext()
 void UIContext::Render(ApplicationContext& context) { m_->Render(context); }
 
 
-
-std::unique_ptr<UIContext> CreateUIContext(GraphicsContext& gc)
-{
-    auto ui = std::make_unique<UIContext>(gc, "gusteau", 1024, 1024);
-    return ui;
-}
 
 void UIEngine(ApplicationContext& context)
 {
@@ -538,17 +534,27 @@ void RenderEngine(ApplicationContext&) {}
 
 class GusteauChapter1UI : public UIContext
 {
+    ApplicationContext& _ac;
+
 public:
-    GusteauChapter1UI(GraphicsContext& context,
+    GusteauChapter1UI(ApplicationContext& ac, GraphicsContext& gc,
         const std::string& window_name, int width, int height)
-        : UIContext(context, window_name, width, height) {}
+        : UIContext(gc, window_name, width, height)
+        , _ac(ac)
+        {}
 
     virtual void Run() override
     {
         ImGui::Text("Hello world");
         if (ImGui::Button("Quit"))
         {
-            context.join_now = true;
+            _ac.join_now = true;
         }
     }
 };
+
+std::unique_ptr<UIContext> CreateUIContext(GraphicsContext& gc)
+{
+    auto ui = std::make_unique<GusteauChapter1UI>(gc, "gusteau", 1024, 1024);
+    return ui;
+}
