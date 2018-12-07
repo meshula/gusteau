@@ -75,6 +75,7 @@ find_library(GLFW_LIBRARY_RELEASE NAMES ${GLFW_NAMES}
     /sw
     /opt/local
 
+
     # authors prefered choice for development
     /build
     /build-release
@@ -84,6 +85,7 @@ find_library(GLFW_LIBRARY_RELEASE NAMES ${GLFW_NAMES}
     PATH_SUFFIXES
     /lib
     /lib64
+    /lib/x86_64-linux-gnu
     /lib-${GLFW_LIB_SUFFIX}
     /src # for from-source builds
 
@@ -112,6 +114,7 @@ find_library(GLFW_LIBRARY_DEBUG NAMES ${GLFW_DEBUG_NAMES}
 
     PATH_SUFFIXES
     /lib
+    /lib/x86_64-linux-gnu
     /lib64
     /src # for from-source builds
 
