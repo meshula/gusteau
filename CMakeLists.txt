@@ -34,7 +34,7 @@ set(CMAKE_CXX_FLAGS "${_PXR_CXX_FLAGS} ${CMAKE_CXX_FLAGS}")
 
 include(Packages)
 target_sources(Gusteau-chapter-1 PRIVATE 
-    src/main.cpp 
+    src/chapter1.cpp 
     src/imgui/imgui.cpp 
     src/imgui/imgui_draw.cpp 
     src/imgui/imgui_impl_glfw_gl3.cpp

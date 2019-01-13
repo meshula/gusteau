@@ -18,16 +18,16 @@
 /// stddoc, from here: https://github.com/r-lyeh/stddoc.c  Compile it, and then at 
 /// a command line, type 
 /// ~~~~
-/// stddoc < main.cpp > main.html
+/// stddoc < chapter1.cpp > chapter1.html
 /// ~~~~
-/// Then open main.html in a browser. Next, at a development command line, go to 
-/// a directory you'd like to do your build in, I suggest a sibling to the gusteau
+/// Then open chapter1.html in a browser. Next, at a development command line, go to 
+/// a directory you'd like to do your build in. I suggest a sibling to the gusteau
 /// directory,and type
 ///
 /// ~~~~
-/// mkdir gusteau-build-chapter-1
-/// cd gusteau-build-chapter-1
-/// cmake ../gusteau
+/// mkdir gusteau-build-chapter1
+/// cd gusteau-build-chapter1
+/// cmake ../gusteau -DCHAPTER=chapter1
 /// ~~~~
 /// Note that for this to work properly on Windows, the development command line
 /// must match the build you want. So run the Development Tools for x64 command
@@ -53,19 +53,6 @@
 #include <cstring>
 #include <memory>
 
-/// We'll make a control queue out of a std::deque, and for now, will encode our commands as strings.
-///<C++
-#include "ConcurrentQueue.h"
-typedef lab::ConcurrentQueue<std::string> StateCommandQueue;
-typedef lab::ConcurrentQueue<std::string> RenderCommandQueue;
-
-/// The different engines will communicate with each other via the command
-/// queues. The UI will inform the state engine of intended changes, the
-/// stage engine will tell the render engine that there are updates, and so on.
-/// This mechanism forces responsibilities into single points of contact.
-/// The trickiest bit is that UI can see the state, and the renderer can
-/// see the state, but neither can modify it. The state can see nothing.
-///
 /// The application context manages the lifespan of the objects that make up the system.
 ///
 /// The state context holds the application state. This object is a simple
@@ -157,15 +144,8 @@ public:
     StateContext state;
     RenderContext render;
 
-    StateCommandQueue state_commands;
-    RenderCommandQueue render_commands;
-
     bool join_now{};
 };
-
-/// The state can only be communicated with via a fifo. The fifo is
-/// writeable by any engine, and readable only by the state object.
-/// That will be enforced by the interface to the StateCommandQueue.
 
 #include <thread>
 #include <vector>
@@ -177,7 +157,7 @@ void StateEngine(ApplicationContext&);
 void RenderEngine(ApplicationContext&);
 void UIEngine(ApplicationContext&);
 
-/// It will be the job of the ui_engine to set the join_now flag on the context
+/// It will be the job of the UIEngine to set the join_now flag on the context
 /// which will let all the other engines know it's time to shut down.
 ///
 /// The main function will own the root graphics context and application context
@@ -496,6 +476,7 @@ void UIEngine(ApplicationContext& context)
         // if the graphics viewport is not actively rendering, update at 24hz
         // When the render engine is in place, and has an animation mode,
         // this timeout should be set appropriately to the intended frame rate.
+        // We'll come back to this later.
         glfwWaitEventsTimeout(1.f / 24.f);
         context.ui.Render(context);
     }
@@ -555,3 +536,4 @@ std::unique_ptr<UIContext> CreateUIContext(GraphicsContext& gc)
     auto ui = std::make_unique<GusteauChapter1UI>(gc, "gusteau", 1024, 1024);
     return ui;
 }
+///>
