@@ -12,6 +12,9 @@
 ///
 /// Chapter 2 builds upon Chapter 1.
 
+#define LABTEXT_ODR
+#include "LabText.h"
+#undef LABTEXT_ODR
 #include "chapter1.cpp"
 
 /// The build of chapter2 will be similar to that of chapter 1.
@@ -70,46 +73,36 @@
 ///
 /// This can then be expanded via substitution as many times as we want. 
 ///
-///    CLOCK = (tick -> tick -> tick -> tick -> (tick -> CLOCK))
+///    CLOCK = (tick -> (tick -> (tick -> (tick -> (tick -> CLOCK)))))
 ///
 /// A tick tock clock would be
 ///
-/// CLOCK = (tick -> tock -> CLOCK)
+/// CLOCK = (tick -> (tock -> CLOCK))
 ///
-/// These actions are considered to be instantaneous;
+/// tick and tock are CLOCK's alphabet.
+///
+/// Actions are considered to be instantaneous;
 /// since timing can be considered independently. There's no concept of simultaneity;
 /// if two events are considered to occur simultaneously, they are treated as a
 /// single event.
 ///
-/// A few simple extensions enable processes to describe choices and other
-/// constructions. The following process
-///
-/// (x -> P | y -> Q | z -> R)
-/// 
-/// will exhibit one of the behaviors P, Q, or R, upon observation of the events
-/// x, y, and Z respectively.
-///
-/// Process composition is defined by further operators.
-///
-/// (x -> C) || (x -> D) says that if X occurs, actions C and D occur.
-/// (x -> C) ||| (x -> D) says that if X occurs one of the processes can execute. 
-/// (x -> A) [] (y -> B) says that one of x or y proceed to A or B, but not both.
-/// 
-// how is [] different from |?
-///
-/// Sequence is indicated as
-/// P = Q ; R
-/// A loop recursively as
-/// P = (P ; X) 
-///
-/// Interrupts
-/// (P ^ Q)
-/// P can be interrupted on the occurrence of Q, and P is never resumed.
-///
-/// This much of the algebra describes the Sequential part of CSP, we will 
-/// revisit the communication part later, as there is much that can be done
-/// with this basis.
-
-#define LABTEXT_ODR
-#include "LabText.h"
+/// Our events are going to be defined using a similar syntax, with a practical
+/// extension; which is that our events will be adorned with a message to be
+/// emitted whenever a process fires. A simple example follows, implementing the
+/// two clock examples. 
+///<C++
 #include "csp.h"
+char* csp_clock_sample_src = R"csp(
+    CLOCK = (tick -> CLOCK "ticked")
+    CLOCK2 = (tick -> (tock -> CLOCK2 "clock2_tocked") "ticked")
+)csp";
+CSP* csp_clock_sample = csp_parse(csp_clock_sample_src, strlen(csp_clock_sample_src));
+csp_bind_lambda(csp_clock_sample, "ticked", [](){printf("tick\n");});
+csp_bind_lambda(csp_clock_sample, "clock2_tocked", [](){printf("tock\n");});
+csp_emit(csp_clock_sample, "tick");
+csp_emit(csp_clock_sample, "foo");   // an event in an unknown alphabet
+csp_emit(csp_clock_sample, "tock");
+csp_emit(csp_clock_sample, "tick");
+csp_emit(csp_clock_sample, "tock");
+csp_update(csp);
+///>

@@ -1,6 +1,11 @@
 
 cmake_minimum_required(VERSION 3.4)
-project(Gusteau-chapter-1)
+
+if (NOT CHAPTER)
+    set(CHAPTER chapter1)
+endif()
+
+project(Gusteau-${CHAPTER})
 
 set(GUSTEAU_ROOT "${CMAKE_CURRENT_SOURCE_DIR}")
 
@@ -26,36 +31,36 @@ if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Release")
 endif()
 
-add_executable(Gusteau-chapter-1 "")
+add_executable(Gusteau-${CHAPTER} "")
 
 include(CXXDefaults)
 add_definitions(${_PXR_CXX_DEFINITIONS})
 set(CMAKE_CXX_FLAGS "${_PXR_CXX_FLAGS} ${CMAKE_CXX_FLAGS}")
 
 include(Packages)
-target_sources(Gusteau-chapter-1 PRIVATE 
-    src/chapter1.cpp 
+target_sources(Gusteau-${CHAPTER} PRIVATE 
+    src/${CHAPTER}.cpp 
     src/imgui/imgui.cpp 
     src/imgui/imgui_draw.cpp 
     src/imgui/imgui_impl_glfw_gl3.cpp
     src/glew/glew.c)
 
-target_compile_definitions(Gusteau-chapter-1 PUBLIC ${USD_DEFINES})
+target_compile_definitions(Gusteau-${CHAPTER} PUBLIC ${USD_DEFINES})
 
 if (WIN32)
-    target_compile_definitions(Gusteau-chapter-1 PUBLIC PLATFORM_WINDOWS)
-    target_compile_definitions(Gusteau-chapter-1 PUBLIC __TBB_NO_IMPLICIT_LINKAGE=1)
-    target_compile_definitions(Gusteau-chapter-1 PUBLIC __TBBMALLOC_NO_IMPLICIT_LINKAGE=1)
+    target_compile_definitions(Gusteau-${CHAPTER} PUBLIC PLATFORM_WINDOWS)
+    target_compile_definitions(Gusteau-${CHAPTER} PUBLIC __TBB_NO_IMPLICIT_LINKAGE=1)
+    target_compile_definitions(Gusteau-${CHAPTER} PUBLIC __TBBMALLOC_NO_IMPLICIT_LINKAGE=1)
 elseif (APPLE)
-    target_compile_definitions(Gusteau-chapter-1 PUBLIC PLATFORM_DARWIN)
-    target_compile_definitions(Gusteau-chapter-1 PUBLIC PLATFORM_MACOS)
+    target_compile_definitions(Gusteau-${CHAPTER} PUBLIC PLATFORM_DARWIN)
+    target_compile_definitions(Gusteau-${CHAPTER} PUBLIC PLATFORM_MACOS)
 else()
-    target_compile_definitions(Gusteau-chapter-1 PUBLIC PLATFORM_LINUX)
+    target_compile_definitions(Gusteau-${CHAPTER} PUBLIC PLATFORM_LINUX)
 endif()
 
-target_compile_definitions(Gusteau-chapter-1 PUBLIC GLEW_STATIC)
+target_compile_definitions(Gusteau-${CHAPTER} PUBLIC GLEW_STATIC)
 
-target_include_directories(Gusteau-chapter-1 PRIVATE
+target_include_directories(Gusteau-${CHAPTER} PRIVATE
     ${GUSTEAU_ROOT}/src/glew/include
     ${GLFW_INCLUDE_DIR}
     ${GUSTEAU_ROOT}/src
@@ -65,30 +70,30 @@ if (UNIX)
     set(PTHREAD_LIB pthread)
 endif()
 
-target_link_libraries(Gusteau-chapter-1 debug
+target_link_libraries(Gusteau-${CHAPTER} debug
     ${OPENGL_LIBRARIES} ${GLFW_LIBRARY_RELEASE} ${PTHREAD_LIB})
-target_link_libraries(Gusteau-chapter-1 optimized
+target_link_libraries(Gusteau-${CHAPTER} optimized
     ${OPENGL_LIBRARIES} ${GLFW_LIBRARY_RELEASE} ${PTHREAD_LIB})
 
 if (MSVC_IDE)
     # hack to get around the "Debug" and "Release" directories cmake tries to add on Windows
-    #set_target_properties(Gusteau-chapter-1 PROPERTIES PREFIX "../")
-    #set_target_properties(Gusteau-chapter-1 PROPERTIES IMPORT_PREFIX "../")
+    #set_target_properties(Gusteau-${CHAPTER} PROPERTIES PREFIX "../")
+    #set_target_properties(Gusteau-${CHAPTER} PROPERTIES IMPORT_PREFIX "../")
 endif()
 
-set_target_properties(Gusteau-chapter-1
+set_target_properties(Gusteau-${CHAPTER}
     PROPERTIES
     ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
     LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
 )
 
-install (TARGETS Gusteau-chapter-1
+install (TARGETS Gusteau-${CHAPTER}
     ARCHIVE DESTINATION lib
     LIBRARY DESTINATION lib
     RUNTIME DESTINATION bin)
 
-install (TARGETS Gusteau-chapter-1 DESTINATION bin)
+install (TARGETS Gusteau-${CHAPTER} DESTINATION bin)
 
 file(GLOB src "src/*")
 source_group(src FILES ${src})
