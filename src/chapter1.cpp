@@ -102,7 +102,17 @@ public:
     virtual ~GraphicsContext();
 };
 
-class ApplicationContext;
+class UIContext;
+
+class ApplicationContextBase
+{
+public:
+    ApplicationContextBase() {}
+    virtual ~ApplicationContextBase() = default;
+    virtual void Update() = 0;
+    bool join_now = false;
+    std::shared_ptr<UIContext> ui;
+};
 
 class UIContext
 {
@@ -112,8 +122,8 @@ public:
     UIContext(GraphicsContext& context,
         const std::string& window_name, int width, int height);
     ~UIContext();
-    void Render(ApplicationContext&);
-    virtual void Run(ApplicationContext&) = 0;
+    void Render(ApplicationContextBase&);
+    virtual void Run(ApplicationContextBase&) = 0;
 };
 
 /// Factory functions are used to create contexts. The application's main() is the
@@ -123,29 +133,43 @@ public:
 /// to rebuild or modify the application itself in any way.
 ///<C++
 std::unique_ptr<GraphicsContext> CreateRootGraphicsContext();
-std::unique_ptr<UIContext> CreateUIContext(GraphicsContext&);
+std::shared_ptr<UIContext> CreateUIContext(GraphicsContext&);
+std::shared_ptr<ApplicationContextBase> CreateApplicationContext(GraphicsContext& gc, std::shared_ptr<UIContext> ui);
 ///>
 
 
 /// The application context bundles the context objects, and the running state
 /// of the application itself
+
+#ifdef GUSTEAU_chapter1
 ///<C++
-class ApplicationContext
+class ApplicationContext : public ApplicationContextBase
 {
 public:	
-    ApplicationContext(GraphicsContext& gc, UIContext& ui) 
+    ApplicationContext(GraphicsContext& gc,std::shared_ptr<UIContext> ui_) 
         : root_graphics_context(gc)
-        , ui(ui) {}
+    {
+        ui = ui_;
+    }
 
     ~ApplicationContext() = default;
 
+    virtual void Update() override {}    // doesn't need to do anything for chapter 1
+
     GraphicsContext& root_graphics_context;
-    UIContext& ui;
     StateContext state;
     RenderContext render;
 
     bool join_now{};
 };
+
+std::shared_ptr<ApplicationContextBase> CreateApplicationContext(GraphicsContext& gc, std::shared_ptr<UIContext> ui)
+{
+    return std::make_shared<ApplicationContext>(gc, ui);
+}
+
+///>
+#endif // GUSTEAU_chapter1
 
 #include <thread>
 #include <vector>
@@ -153,9 +177,9 @@ public:
 
 /// We'll name the engines up front, and come back to them in a moment.
 ///<C++
-void StateEngine(ApplicationContext&);
-void RenderEngine(ApplicationContext&);
-void UIEngine(ApplicationContext&);
+void StateEngine(std::shared_ptr<ApplicationContextBase>);
+void RenderEngine(std::shared_ptr<ApplicationContextBase>);
+void UIEngine(std::shared_ptr<ApplicationContextBase>);
 
 /// It will be the job of the UIEngine to set the join_now flag on the context
 /// which will let all the other engines know it's time to shut down.
@@ -181,18 +205,20 @@ void UIEngine(ApplicationContext&);
 int main(int argc, char** argv) try
 {
     std::unique_ptr<GraphicsContext> root_graphics_context(CreateRootGraphicsContext());
-    std::unique_ptr<UIContext> ui_context(CreateUIContext(*root_graphics_context.get()));
-    ApplicationContext context(*root_graphics_context.get(), *ui_context.get());
+    std::shared_ptr<UIContext> ui_context = CreateUIContext(*root_graphics_context.get());
+    std::shared_ptr<ApplicationContextBase> app_context(CreateApplicationContext(*root_graphics_context.get(), ui_context));
 
     std::vector<std::thread> jobs(2);
-    jobs.emplace_back(std::thread([&context]() { StateEngine(context); }));
-    jobs.emplace_back(std::thread([&context]() { RenderEngine(context); }));
+    jobs.emplace_back(std::thread([app_context]() { StateEngine(app_context); }));
+    jobs.emplace_back(std::thread([app_context]() { RenderEngine(app_context); }));
 
-    UIEngine(context);
+    UIEngine(app_context);
 
     for (auto& j : jobs)
         if (j.joinable())
             j.join();
+
+
 
     return 0;
 }
@@ -342,10 +368,10 @@ struct UIContext::Detail
     GLFWwindow* _window{};
     ImGuiContext* _context{};
     std::string _window_name;
-    std::function<void(ApplicationContext&)> _run;
+    std::function<void(ApplicationContextBase&)> _run;
 
     Detail(GraphicsContext& context,
-           std::function<void(ApplicationContext&)> run,
+           std::function<void(ApplicationContextBase&)> run,
            const std::string& window_name, int width, int height)
         : _window_name(window_name), _run(run)
     {
@@ -396,7 +422,7 @@ struct UIContext::Detail
         ImGui::SetCurrentContext(_context);
     }
 
-    void Render(ApplicationContext& context)
+    void Render(ApplicationContextBase& context)
     {
         if (!_window || context.join_now)
             return;
@@ -456,7 +482,7 @@ struct UIContext::Detail
 
 UIContext::UIContext(GraphicsContext& context,
     const std::string& window_name, int width, int height)
-    : m_(new Detail(context, [this](ApplicationContext& ac) { Run(ac); }, window_name, width, height))
+    : m_(new Detail(context, [this](ApplicationContextBase& ac) { Run(ac); }, window_name, width, height))
 {
 }
 
@@ -465,20 +491,21 @@ UIContext::~UIContext()
 	delete m_;
 }
 
-void UIContext::Render(ApplicationContext& context) { m_->Render(context); }
+void UIContext::Render(ApplicationContextBase& context) { m_->Render(context); }
 
 
 
-void UIEngine(ApplicationContext& context)
+void UIEngine(std::shared_ptr<ApplicationContextBase> context)
 {
-    while (!context.join_now)
+    while (!context->join_now)
     {
         // if the graphics viewport is not actively rendering, update at 24hz
         // When the render engine is in place, and has an animation mode,
         // this timeout should be set appropriately to the intended frame rate.
         // We'll come back to this later.
         glfwWaitEventsTimeout(1.f / 24.f);
-        context.ui.Render(context);
+        context->ui->Render(*context.get());
+        context->Update();
     }
 }
 
@@ -493,7 +520,7 @@ StateContext::~StateContext()
     delete m_;
 }
 
-void StateEngine(ApplicationContext&) {}
+void StateEngine(std::shared_ptr<ApplicationContextBase>) {}
 
 struct RenderContext::Detail
 {};
@@ -506,13 +533,15 @@ RenderContext::~RenderContext()
     delete m_;
 }
 
-void RenderEngine(ApplicationContext&) {}
+void RenderEngine(std::shared_ptr<ApplicationContextBase>) {}
 
 /// Everything up until now has been structure to run our application, and
 /// will be the same for every application that follows this outline.
 /// All that's left is the specialization of the individual pieces.
-///<C++
 
+#ifdef GUSTEAU_chapter1
+
+///<C++
 class GusteauChapter1UI : public UIContext
 {
 public:
@@ -537,3 +566,5 @@ std::unique_ptr<UIContext> CreateUIContext(GraphicsContext& gc)
     return ui;
 }
 ///>
+
+#endif

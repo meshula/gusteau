@@ -1,5 +1,5 @@
 
-cmake_minimum_required(VERSION 3.4)
+cmake_minimum_required(VERSION 3.10)
 
 if (NOT CHAPTER)
     set(CHAPTER chapter1)
@@ -46,6 +46,7 @@ target_sources(Gusteau-${CHAPTER} PRIVATE
     src/glew/glew.c)
 
 target_compile_definitions(Gusteau-${CHAPTER} PUBLIC ${USD_DEFINES})
+target_compile_definitions(Gusteau-${CHAPTER} PUBLIC GUSTEAU_${CHAPTER})
 
 if (WIN32)
     target_compile_definitions(Gusteau-${CHAPTER} PUBLIC PLATFORM_WINDOWS)
