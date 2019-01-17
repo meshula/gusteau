@@ -108,13 +108,13 @@ void test_csp()
 
     CSP* csp_clock_sample = csp_parse(csp_clock_sample_src, strlen(csp_clock_sample_src));
 
-    csp_bind_lambda(csp_clock_sample, "ticked", [](){printf("tick\n");});
-    csp_bind_lambda(csp_clock_sample, "clock2_tocked", [](){printf("tock\n");});
-    csp_emit(csp_clock_sample, "tick");
-    csp_emit(csp_clock_sample, "foo");   // an event in an unknown alphabet
-    csp_emit(csp_clock_sample, "tock");
-    csp_emit(csp_clock_sample, "tick");
-    csp_emit(csp_clock_sample, "tock");
+    csp_bind_lambda(csp_clock_sample, "ticked", [](int){printf("tick\n");});
+    csp_bind_lambda(csp_clock_sample, "clock2_tocked", [](int){printf("tock\n");});
+    csp_emit(csp_clock_sample, "tick", {});
+    csp_emit(csp_clock_sample, "foo", {});   // an event in an unknown alphabet
+    csp_emit(csp_clock_sample, "tock", {});
+    csp_emit(csp_clock_sample, "tick", {});
+    csp_emit(csp_clock_sample, "tock", {});
     csp_update(csp_clock_sample);
 }
 ///>
@@ -125,30 +125,71 @@ void test_csp()
 /// All the things that application context can do will be registered here
 /// as processes.
 /// The quit event leads to STOP, and outputs a "join_now".
+/// Each process can be thought of as an independent state machine, running
+/// concurrently with all the others.
+///
+/// Some of these commands do nothing but respond, output, and wait to respond again
+/// and as such their definition is a bit boring. When we get to more complex
+/// programs, we'll see more interesting state machines than this.
+///<C++
 char* csp_ac_src = R"csp(
+    APPEND_LINE = (append_line -> APPEND_LINE "append_line")
+    POP_LINE = (pop_line -> POP_LINE "pop_line")
     QUIT = (quit -> STOP "join_now")
 )csp";
+///>
+/// Processes will communicate via a blackboard. The main feature of the
+/// the blackboard is that it is a threadsafe associative map of identifiers
+/// to data. A process' action can request an id from the blackboard while
+/// simultaneously writing a value to it, atomically.
+///
+#include "blackboard.h"
 
 ///<C++
 class ApplicationContext : public ApplicationContextBase
 {
 public:	
     ApplicationContext(GraphicsContext& gc, std::shared_ptr<UIContext> ui_) 
-        : root_graphics_context(gc)
+    : root_graphics_context(gc)
+    , blackboard(new Blackboard())
     {
         ui = ui_;
         csp = csp_parse(csp_ac_src, strlen(csp_ac_src));
         auto self = this;
-        csp_bind_lambda(csp, "join_now", [self]() { self->join_now = true; });
+        ///>
+        /// The join_now action is here, bound by name to the csp QUIT process.
+        ///<C++
+        csp_bind_lambda(csp, "join_now", [self](int) { self->join_now = true; });
+        csp_bind_lambda(csp, "append_line", [self](int id)
+        {
+            if (id)
+            {
+                TypedData* d = blackboard_get(self->blackboard, id);
+                auto td = dynamic_cast<Data<std::string>*>(d);
+                if (td)
+                    self->lines.push_back(td->value());
+                ///>
+                /// The data from the blackboard is not reference counted
+                /// so it must be deleted here.
+                ///<C++
+                delete d;
+            }
+        });
+        csp_bind_lambda(csp, "pop_line", [self](int)
+        {
+            if (self->lines.size())
+                self->lines.pop_back();
+        });
     }
 
     ~ApplicationContext()
     {
         delete csp;
+        delete blackboard;
     }
 
 ///>
-/// The ApplicationContext will be updated, once per framing round.
+/// The ApplicationContext will be updated once per framing round.
 /// This is the place where any pending events will be applied to processes,
 /// and process behaviors will run. The update occurs after the UI has been
 /// rendered, in the UI thread. For this reason, bound lambdas need to be
@@ -170,7 +211,10 @@ public:
     StateContext state;
     RenderContext render;
 
+    std::vector<std::string> lines;
+
     CSP* csp = nullptr;
+    Blackboard* blackboard = nullptr;
 };
 
 std::shared_ptr<ApplicationContextBase> CreateApplicationContext(GraphicsContext& gc, std::shared_ptr<UIContext> ui)
@@ -198,7 +242,24 @@ public:
 /// The UI in chapter two is going to utilize the CSP mechanism to do it's work,
 /// instead of setting variables on the ApplicationContext as it did previously.
 ///<C++
-            csp_emit(ac_ptr->csp, "quit");
+            csp_emit(ac_ptr->csp, "quit", 0);
+        }
+        static char buff[256];
+        ImGui::InputText("Line: ", buff, sizeof(buff));
+        if (ImGui::Button("Append"))
+        {
+            int id = blackboard_new_entry(ac_ptr->blackboard, new Data<std::string>(std::string{buff}));
+            csp_emit(ac_ptr->csp, "append_line", id);
+        }
+        if (ImGui::Button("Pop"))
+        {
+            csp_emit(ac_ptr->csp, "pop_line", 0);
+        }
+        ImGui::TextUnformatted("------ LINES ------");
+        size_t sz = ac_ptr->lines.size();
+        for (auto i = 0; i < sz; ++i)
+        {
+            ImGui::TextUnformatted(ac_ptr->lines[i].c_str());
         }
     }
 };
@@ -210,4 +271,4 @@ std::shared_ptr<UIContext> CreateUIContext(GraphicsContext& gc)
     return ui;
 }
 
-#endif
+#endif // GUSTEAU_chapter2

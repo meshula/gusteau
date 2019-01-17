@@ -37,7 +37,9 @@ include(CXXDefaults)
 add_definitions(${_PXR_CXX_DEFINITIONS})
 set(CMAKE_CXX_FLAGS "${_PXR_CXX_FLAGS} ${CMAKE_CXX_FLAGS}")
 
-include(Packages)
+find_package(OpenGL REQUIRED)
+find_package(GLFW REQUIRED)
+
 target_sources(Gusteau-${CHAPTER} PRIVATE 
     src/${CHAPTER}.cpp 
     src/imgui/imgui.cpp 

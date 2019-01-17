@@ -96,12 +96,17 @@ StrView parse_csp_process(StrView curr, std::vector<std::unique_ptr<CSP_Process>
     return token;
 }
 
+struct CSP_Event
+{
+    std::string name;
+    int id;
+};
 struct CSP
 {
     std::vector<std::unique_ptr<CSP_Process>> processes;
     std::vector<int> process_active;
-    std::map<std::string, std::function<void()>, std::less<>> lambdas;
-    moodycamel::ConcurrentQueue<std::string> q;
+    std::map<std::string, std::function<void(int)>, std::less<>> lambdas;
+    moodycamel::ConcurrentQueue<CSP_Event> q;
     std::mutex process_data_mutex;
 };
 
@@ -158,7 +163,7 @@ CSP* csp_parse(char const*const src, size_t len)
     return csp;
 }
 
-void csp_bind_lambda(CSP* csp, char const*const name, std::function<void()> fn)
+void csp_bind_lambda(CSP* csp, char const*const name, std::function<void(int)> fn)
 {
     if (!csp || !name || !fn)
         return;
@@ -168,10 +173,10 @@ void csp_bind_lambda(CSP* csp, char const*const name, std::function<void()> fn)
     csp->lambdas[name] = fn;
 }
 
-void csp_emit(CSP* csp, char const*const name)
+void csp_emit(CSP* csp, char const*const name, int id)
 {
     if (csp && name)
-        csp->q.enqueue(name);
+        csp->q.enqueue({std::string{name}, id});
 }
 
 void csp_update(CSP* csp)
@@ -181,8 +186,8 @@ void csp_update(CSP* csp)
 
     // guard against adding processes, or changing them
     std::unique_lock<std::mutex> lock(csp->process_data_mutex);
-    std::string name;
-    while (csp->q.try_dequeue(name))
+    CSP_Event event;
+    while (csp->q.try_dequeue(event))
     {
         size_t sz = csp->processes.size();
         for (int i = 0; i < sz; ++i)
@@ -192,14 +197,14 @@ void csp_update(CSP* csp)
 
             CSP_Process* p = csp->processes[i].get();
 
-            if (name != p->event)
+            if (event.name != p->event)
                 continue;
 
             auto fn_it = csp->lambdas.find(p->out);
             if (fn_it != csp->lambdas.end())
             {
-                std::function<void()>& fn = fn_it->second;
-                fn();
+                std::function<void(int)>& fn = fn_it->second;
+                fn(event.id);
             }
 
             // common case: recur.
