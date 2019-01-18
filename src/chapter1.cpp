@@ -361,7 +361,8 @@ std::unique_ptr<GraphicsContext> CreateRootGraphicsContext()
 ///<C++
 #include <imgui/imgui.h>
 #include <imgui/imgui_internal.h> // for ImGuiContext
-#include <imgui/imgui_impl_glfw_gl3.h>
+#include <imgui/examples/imgui_impl_glfw.h>
+#include <imgui/examples/imgui_impl_opengl3.h>
 
 struct UIContext::Detail
 {
@@ -383,11 +384,22 @@ struct UIContext::Detail
         _window = glfwCreateWindow(width, height, window_name.c_str(), NULL, gc->_window);
         glfwMakeContextCurrent(_window);
 
-        // bind the glfw keyboard and mouse callbacks for this window so that ImGui gets called
-        ImGui_ImplGlfwGL3_Init(_window, true);
-
+        // Setup Dear ImGui context
+        IMGUI_CHECKVERSION();
         _context = ImGui::CreateContext();
+        ImGuiIO& io = ImGui::GetIO(); (void)io;
+        //io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;  // Enable Keyboard Controls
+        //io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;   // Enable Gamepad Controls
 
+        // Setup Dear ImGui style
+        ImGui::StyleColorsDark();
+        //ImGui::StyleColorsClassic();
+
+        // Setup Platform/Renderer bindings
+        const char* glsl_version = "#version 150";
+        ImGui_ImplGlfw_InitForOpenGL(_window, true);
+        ImGui_ImplOpenGL3_Init(glsl_version);
+    
         // the context should only be captured when it's in use, as it can't be
         // captured in two places at once
         glfwMakeContextCurrent(nullptr);
@@ -395,12 +407,13 @@ struct UIContext::Detail
 
     ~Detail()
     {
-        //Can't destroy context because there are still issues around global variables
-        // in ImGui, particularly the FontAtlas
-        //if (_context)
-        //    ImGui::DestroyContext(_context);
-        if (_window)
-            glfwDestroyWindow(_window);
+        // Cleanup
+        ImGui_ImplOpenGL3_Shutdown();
+        ImGui_ImplGlfw_Shutdown();
+        ImGui::DestroyContext();
+
+        glfwDestroyWindow(_window);
+        glfwTerminate();
     }
 
     void ActivateContext()
@@ -413,7 +426,7 @@ struct UIContext::Detail
         {
             std::memcpy(&_context->Style, &prevContext->Style, sizeof(ImGuiStyle));
             std::memcpy(&_context->IO.KeyMap, &prevContext->IO.KeyMap, sizeof(prevContext->IO.KeyMap));
-            std::memcpy(&_context->MouseCursorData, &prevContext->MouseCursorData, sizeof(_context->MouseCursorData));
+            //std::memcpy(&_context->MouseCursorData, &prevContext->MouseCursorData, sizeof(_context->MouseCursorData));
             _context->IO.IniFilename = prevContext->IO.IniFilename;
             _context->IO.RenderDrawListsFn = prevContext->IO.RenderDrawListsFn;
             _context->Initialized = prevContext->Initialized;
@@ -438,7 +451,9 @@ struct UIContext::Detail
         // Setup display size (every frame to accommodate for window resizing)
         io.DisplaySize = ImVec2(static_cast<float>(w), static_cast<float>(h));
 
-        ImGui_ImplGlfwGL3_NewFrame(_window);
+        ImGui_ImplOpenGL3_NewFrame();
+        ImGui_ImplGlfw_NewFrame();
+        ImGui::NewFrame();
 
         //ImGuizmo::BeginFrame();
 
@@ -474,6 +489,7 @@ struct UIContext::Detail
 
         ImGui::End(); // end the main window
         ImGui::Render();
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
         glfwSwapBuffers(_window);
     }

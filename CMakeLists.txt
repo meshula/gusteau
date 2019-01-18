@@ -43,12 +43,19 @@ find_package(GLFW REQUIRED)
 target_sources(Gusteau-${CHAPTER} PRIVATE 
     src/${CHAPTER}.cpp 
     src/imgui/imgui.cpp 
+    src/imgui/imgui.h
     src/imgui/imgui_draw.cpp 
-    src/imgui/imgui_impl_glfw_gl3.cpp
+    src/imgui/imgui_internal.h
+    src/imgui/imgui_widgets.cpp
+    src/imgui/examples/imgui_impl_glfw.cpp
+    src/imgui/examples/imgui_impl_glfw.h
+    src/imgui/examples/imgui_impl_opengl3.cpp
+    src/imgui/examples/imgui_impl_opengl3.h
     src/glew/glew.c)
 
 target_compile_definitions(Gusteau-${CHAPTER} PUBLIC ${USD_DEFINES})
 target_compile_definitions(Gusteau-${CHAPTER} PUBLIC GUSTEAU_${CHAPTER})
+target_compile_definitions(Gusteau-${CHAPTER} PUBLIC IMGUI_IMPL_OPENGL_LOADER_GLEW)
 
 if (WIN32)
     target_compile_definitions(Gusteau-${CHAPTER} PUBLIC PLATFORM_WINDOWS)
