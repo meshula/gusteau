@@ -61,59 +61,39 @@
 ///<C++
 class StateContext
 {
-    struct Detail;
-    Detail* m_{};
 public:
-    StateContext();
-    ~StateContext();
+    StateContext() = default;
+    virtual ~StateContext() = default;
 };
 
-/// There's no need to use a unique_ptr for Detail, the context object destructor
-/// is responsible for removing it. Using a unique_ptr requires exposing the
-/// contents of the Detail class, and so must be globally available, or 
-/// known to the context object destructor. Since the idea is to not make it
-/// globally available, and since the context destructor will have to know 
-/// about it anyway, the unique_ptr adds no value.
-///
-/// The detail objects can be lazily created by the state object when
-/// needed. Having a simple pointer here makes the context object itself
-/// lightweight and trivially constructable.
+/// The render context will hold information necessary for rendering a
+/// scene; such as information on accessing scene state, camera parameters,
+/// cached values, and so on.
 ///<C++
 class RenderContext
 {
-    struct Detail;
-    Detail* m_{};
 public:
-    RenderContext();
-    ~RenderContext();
+    RenderContext() = default;
+    virtual ~RenderContext() = default;
 };
-
+///>
 /// Various systems are going to need access to the graphics context for
-/// rendering. The details are not important, the only thing that matters
-/// is that it can be declared and held by objects that reference it,
-/// such as the ApplicationContext.
+/// rendering. Subclasses of the GraphicsContext object will contain 
+/// things such necessary to enable sharing of resources like textures and
+/// vertex data between graphic context objects.
 ///<C++
 class GraphicsContext
 {
-    struct Detail;
-    Detail* m_{};
 public:
-    GraphicsContext();
-    virtual ~GraphicsContext();
+    GraphicsContext() = default;
+    virtual ~GraphicsContext() = default;
 };
+///>
 
-class UIContext;
+class ApplicationContextBase;
 
-class ApplicationContextBase
-{
-public:
-    ApplicationContextBase() {}
-    virtual ~ApplicationContextBase() = default;
-    virtual void Update() = 0;
-    bool join_now = false;
-    std::shared_ptr<UIContext> ui;
-};
-
+/// The UI Context will know about the user interface state.
+///<C++
 class UIContext
 {
     struct Detail;
@@ -125,6 +105,20 @@ public:
     void Render(ApplicationContextBase&);
     virtual void Run(ApplicationContextBase&) = 0;
 };
+///>
+
+// The application context will bundle all the other contexts together.
+///<C++
+class ApplicationContextBase
+{
+public:
+    ApplicationContextBase() {}
+    virtual ~ApplicationContextBase() = default;
+    virtual void Update() = 0;
+    bool join_now = false;
+    std::shared_ptr<UIContext> ui;
+};
+///>
 
 /// Factory functions are used to create contexts. The application's main() is the
 /// one designated owner of the created contexts, since it will outlast all references
@@ -175,15 +169,21 @@ std::shared_ptr<ApplicationContextBase> CreateApplicationContext(GraphicsContext
 #include <vector>
 #include <iostream>
 
-/// We'll name the engines up front, and come back to them in a moment.
-///<C++
-void StateEngine(std::shared_ptr<ApplicationContextBase>);
-void RenderEngine(std::shared_ptr<ApplicationContextBase>);
-void UIEngine(std::shared_ptr<ApplicationContextBase>);
-
+/// Engines operate on State.
+///
 /// It will be the job of the UIEngine to set the join_now flag on the context
 /// which will let all the other engines know it's time to shut down.
-///
+///<C++
+void UIEngine(std::shared_ptr<ApplicationContextBase>);
+///>
+/// The Render Engine will draw things
+///<C++
+void RenderEngine(std::shared_ptr<ApplicationContextBase>);
+///>
+/// The state engine evolves the state of the application.
+///<C++
+void StateEngine(std::shared_ptr<ApplicationContextBase>);
+///>
 /// The main function will own the root graphics context and application context
 /// for the duration of the executation of the application. We'll signal this
 /// intent to the reader of the code by either instantiating these objects on the
@@ -217,8 +217,6 @@ int main(int argc, char** argv) try
     for (auto& j : jobs)
         if (j.joinable())
             j.join();
-
-
 
     return 0;
 }
@@ -259,31 +257,6 @@ void setGlfwFlags()
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 #endif
-}
-
-/// The GraphicsContext object will contain an invisible root window
-/// with a GL context that can be shared with other GL windows and offscreen
-/// render contexts, to enable sharing of resources like textures and
-/// vertex data.
-///<C++
-struct GraphicsContext::Detail
-{
-    Detail() = default;
-    Detail(Detail&&) = default;
-    ~Detail()
-    {
-    }
-};
-///>
-
-GraphicsContext::GraphicsContext()
-: m_(new Detail)
-{
-}
-
-GraphicsContext::~GraphicsContext()
-{
-    delete m_;
 }
 
 /// The GLFWGraphicsContext exists to ensure that there is a single, root, shared
@@ -474,7 +447,7 @@ struct UIContext::Detail
         sprintf(buff, "###GraphicsWindow_%td", (ptrdiff_t)this);
         ImGui::Begin(buff, 0, flags);
 
-        const float font_scale = 1.0f;
+        const float font_scale = 2.0f;
         ImGui::SetWindowFontScale(font_scale);
 
         // Rendering
@@ -525,38 +498,16 @@ void UIEngine(std::shared_ptr<ApplicationContextBase> context)
     }
 }
 
-struct StateContext::Detail
-{};
-
-StateContext::StateContext()
-: m_(new Detail()) {}
-
-StateContext::~StateContext()
-{
-    delete m_;
-}
-
+/// The State Engine for chapter 1 doesn't have to do anything.
 void StateEngine(std::shared_ptr<ApplicationContextBase>) {}
 
-struct RenderContext::Detail
-{};
-
-RenderContext::RenderContext()
-    : m_(new Detail()) {}
-
-RenderContext::~RenderContext()
-{
-    delete m_;
-}
-
+/// The Render Engine for chapter 1 doesn't have to do anything.
 void RenderEngine(std::shared_ptr<ApplicationContextBase>) {}
-
-/// Everything up until now has been structure to run our application, and
-/// will be the same for every application that follows this outline.
-/// All that's left is the specialization of the individual pieces.
 
 #ifdef GUSTEAU_chapter1
 
+/// The specialization of the UI Engine for chapter one has only
+/// a Quit button to terminate the application. 
 ///<C++
 class GusteauChapter1UI : public UIContext
 {

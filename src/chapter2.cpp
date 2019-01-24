@@ -101,6 +101,12 @@
 
 void test_csp()
 {
+    ///>
+    /// The syntax for events is very simple. 
+    /// EVENT_NAME = PROCESS
+    /// PROCESS = (event -> PROCESS OUTPUT)
+    /// OUTPUT = "string"
+    ///<C++
     char* csp_clock_sample_src = R"csp(
         CLOCK = (tick -> CLOCK "ticked")
         CLOCK2 = (tick -> (tock -> CLOCK2 "clock2_tocked") "ticked")
@@ -108,8 +114,8 @@ void test_csp()
 
     CSP* csp_clock_sample = csp_parse(csp_clock_sample_src, strlen(csp_clock_sample_src));
 
-    csp_bind_lambda(csp_clock_sample, "ticked", [](int){printf("tick\n");});
-    csp_bind_lambda(csp_clock_sample, "clock2_tocked", [](int){printf("tock\n");});
+    csp_bind_lambda(csp_clock_sample, "ticked", [](int){ printf("tick\n"); });
+    csp_bind_lambda(csp_clock_sample, "clock2_tocked", [](int){ printf("tock\n"); });
     csp_emit(csp_clock_sample, "tick", {});
     csp_emit(csp_clock_sample, "foo", {});   // an event in an unknown alphabet
     csp_emit(csp_clock_sample, "tock", {});
@@ -136,6 +142,7 @@ char* csp_ac_src = R"csp(
     APPEND_LINE = (append_line -> APPEND_LINE "append_line")
     POP_LINE = (pop_line -> POP_LINE "pop_line")
     QUIT = (quit -> STOP "join_now")
+    TICK = (tick -> TICK "tick")
 )csp";
 ///>
 /// Processes will communicate via a blackboard. The main feature of the
@@ -144,6 +151,7 @@ char* csp_ac_src = R"csp(
 /// simultaneously writing a value to it, atomically.
 ///
 #include "blackboard.h"
+#include <thread>
 
 ///<C++
 class ApplicationContext : public ApplicationContextBase
@@ -164,6 +172,11 @@ public:
         {
             if (id)
             {
+                ///>
+                /// The append line event comes with a string to append,
+                /// so fetch the data from the blackboard, and coerce it to be a string.
+                /// If that works, append it to the lines buffer.
+                ///<C++
                 TypedData* d = blackboard_get(self->blackboard, id);
                 auto td = dynamic_cast<Data<std::string>*>(d);
                 if (td)
@@ -180,10 +193,39 @@ public:
             if (self->lines.size())
                 self->lines.pop_back();
         });
+        ///>
+        /// Whenever a tick occurs; the variable count will be incremented.
+        ///<C++
+        csp_bind_lambda(csp, "tick", [self](int)
+        {
+            ++self->count;
+        });
+        ///>
+        /// A demonstration thread that runs at 10Hz, emitting ticks as it goes.
+        /// This shows a very simple way that threads can communicate.
+        ///<C++
+        clock = std::thread([this]()
+        {
+            while (!join_now)
+            {
+                csp_emit(csp, "tick", 0);
+                std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            }
+        });
     }
 
     ~ApplicationContext()
     {
+        ///>
+        /// join_now is most likely true from having been set by a Quit
+        /// event, but just to be sure, set it here.
+        ///<C++
+        join_now = true;
+
+        ///>
+        /// Allow the clock thread to join gracefully
+        clock.join();
+
         delete csp;
         delete blackboard;
     }
@@ -210,7 +252,9 @@ public:
     GraphicsContext& root_graphics_context;
     StateContext state;
     RenderContext render;
+    std::thread clock;
 
+    int count = 0;
     std::vector<std::string> lines;
 
     CSP* csp = nullptr;
@@ -244,6 +288,10 @@ public:
 ///<C++
             csp_emit(ac_ptr->csp, "quit", 0);
         }
+        static char tick_text[128];
+        sprintf(tick_text, "tick: %d", ac_ptr->count);
+        ImGui::TextUnformatted(tick_text);
+
         static char buff[256];
         ImGui::InputText("Line: ", buff, sizeof(buff));
         if (ImGui::Button("Append"))
