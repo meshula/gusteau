@@ -151,6 +151,7 @@ char* csp_ac_src = R"csp(
 /// simultaneously writing a value to it, atomically.
 ///
 #include "blackboard.h"
+#include "journal.h"
 #include <thread>
 
 ///<C++
@@ -162,13 +163,16 @@ public:
     , blackboard(new Blackboard())
     {
         ui = ui_;
+        CreateCSP();
+    }
+    ///>
+    /// Initialize all the CSP definitions
+    ///<C++
+    void CreateCSP()
+    {
         csp = csp_parse(csp_ac_src, strlen(csp_ac_src));
-        auto self = this;
-        ///>
-        /// The join_now action is here, bound by name to the csp QUIT process.
-        ///<C++
-        csp_bind_lambda(csp, "join_now", [self](int) { self->join_now = true; });
-        csp_bind_lambda(csp, "append_line", [self](int id)
+
+        csp_bind_lambda(csp, "append_line", [this](int id)
         {
             if (id)
             {
@@ -177,30 +181,61 @@ public:
                 /// so fetch the data from the blackboard, and coerce it to be a string.
                 /// If that works, append it to the lines buffer.
                 ///<C++
-                TypedData* d = blackboard_get(self->blackboard, id);
+                TypedData* d = blackboard_get(blackboard, id);
                 auto td = dynamic_cast<Data<std::string>*>(d);
                 if (td)
-                    self->lines.push_back(td->value());
-                ///>
-                /// The data from the blackboard is not reference counted
-                /// so it must be deleted here.
-                ///<C++
-                delete d;
+                {
+                    ///>
+                    /// append line must append the line.
+                    ///<C++
+                    lines.push_back(td->value());
+                    ///>
+                    /// The operation modified the ApplicationContext, so record the operation
+                    /// in the journal. The journal will come in handy later during the discussion
+                    /// of undo and redo. For now, the journal merely records what happened.
+                    /// If a journal where to be played forward on another ApplicationContext,
+                    /// the other ApplicationContext should achieve the identical state of the 
+                    /// first ApplicationContext. Of course, in a large or long-running
+                    /// application, it might be impractical to record every action; this
+                    /// too will be a topic for a later chapter.
+                    ///<C++
+                    journal.emplace_back(std::move(JournalEntry{"append_line", d}));
+                }
+                else
+                {
+                    ///>
+                    /// The data from the blackboard is not reference counted
+                    /// so it must be deleted here.
+                    ///<C++
+                    delete d;
+                }
             }
         });
-        csp_bind_lambda(csp, "pop_line", [self](int)
+        csp_bind_lambda(csp, "pop_line", [this](int)
         {
-            if (self->lines.size())
-                self->lines.pop_back();
+            if (lines.size())
+            {
+                lines.pop_back();
+                journal.emplace_back(std::move(JournalEntry{"pop_line", nullptr}));
+            }
         });
         ///>
         /// Whenever a tick occurs; the variable count will be incremented.
         ///<C++
-        csp_bind_lambda(csp, "tick", [self](int)
+        csp_bind_lambda(csp, "tick", [this](int)
         {
-            ++self->count;
+            ++count;
+            ///>
+            /// Ticking is not an action that was initiated by the user and doesn't
+            /// need to appear in a journal.
+            ///<C++
         });
         ///>
+        /// The join_now action is here, bound by name to the csp QUIT process.
+        ///<C++
+        csp_bind_lambda(csp, "join_now", [this](int) { join_now = true; });
+        ///>
+
         /// A demonstration thread that runs at 10Hz, emitting ticks as it goes.
         /// This shows a very simple way that threads can communicate.
         ///<C++
@@ -213,6 +248,34 @@ public:
             }
         });
     }
+    ///>
+    /// Given a journal, replay that journal on the current context.
+    ///<C++
+    void ReplayJournal(const std::vector<JournalEntry>& journal)
+    {
+        for (auto& i : journal)
+        {
+            int id = 0;
+            if (i.data)
+                id = blackboard_new_entry(blackboard, i.data->clone());
+            csp_emit(csp, i.name.c_str(), id); 
+        }
+    }
+    ///>
+    /// This version of the constructor also accepts a journal, and replays that
+    /// journal on the ApplicationContext to reproduce the state of an original
+    /// ApplicationContext. This kind of mechanism can be used for loading a
+    /// saved state, reconstructing a state for regression or unit testing, 
+    /// tutorials, and so on.
+    ///<C++
+    ApplicationContext(GraphicsContext& gc, std::shared_ptr<UIContext> ui_, const std::vector<JournalEntry>& journal) 
+    : root_graphics_context(gc)
+    , blackboard(new Blackboard())
+    {
+        ui = ui_;
+        CreateCSP();
+        ReplayJournal(journal);
+    }
 
     ~ApplicationContext()
     {
@@ -224,11 +287,13 @@ public:
 
         ///>
         /// Allow the clock thread to join gracefully
+        ///<C++
         clock.join();
 
         delete csp;
         delete blackboard;
     }
+
 
 ///>
 /// The ApplicationContext will be updated once per framing round.
@@ -259,6 +324,8 @@ public:
 
     CSP* csp = nullptr;
     Blackboard* blackboard = nullptr;
+
+    std::vector<JournalEntry> journal;
 };
 
 std::shared_ptr<ApplicationContextBase> CreateApplicationContext(GraphicsContext& gc, std::shared_ptr<UIContext> ui)

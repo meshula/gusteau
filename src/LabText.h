@@ -38,6 +38,8 @@ License BSD-2 Clause.
     #endif
 #endif
 
+#include <string.h>
+
 #ifndef EXTERNC
     #ifdef __cplusplus
         #define EXTERNC extern "C"

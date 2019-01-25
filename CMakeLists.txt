@@ -9,14 +9,6 @@ project(Gusteau-${CHAPTER})
 
 set(GUSTEAU_ROOT "${CMAKE_CURRENT_SOURCE_DIR}")
 
-# override cmake install prefix if it's not set,
-# per: http://public.kitware.com/pipermail/cmake/2010-December/041135.html
-IF(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
-    SET(CMAKE_INSTALL_PREFIX ${LOCAL_ROOT} CACHE PATH "Install set to local" FORCE)
-ENDIF(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
-
-set(CMAKE_BUILD_TYPE Release)
-
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/defaults
                       ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules
                       ${CMAKE_CURRENT_SOURCE_DIR}/cmake/macros)
@@ -42,6 +34,12 @@ find_package(GLFW REQUIRED)
 
 target_sources(Gusteau-${CHAPTER} PRIVATE 
     src/${CHAPTER}.cpp 
+    src/blackboard.h
+    src/ConcurrentQueue.h
+    src/csp.h
+    src/journal.h
+    src/TypedData.h
+    src/LabText.h
     src/imgui/imgui.cpp 
     src/imgui/imgui.h
     src/imgui/imgui_draw.cpp 
