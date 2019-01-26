@@ -261,6 +261,61 @@ public:
             csp_emit(csp, i.name.c_str(), id); 
         }
     }
+
+    ///>
+    /// Writing a journal is straight forward
+    ///<C++
+    void SaveJounal(char const*const path)
+    {
+        if (!path)
+            return;
+
+        FILE* f = fopen(path, "wb");
+        if (!f)
+            return;
+
+        ///>
+        /// This example is simplistic, as the only journal data that there is
+        /// to be saved is string data.
+        ///<C++
+        for (auto& j : journal)
+            fprintf(f, "%s: %s\n", j.name.c_str(), j.data->to_string().c_str());
+
+        fclose(f);
+    }
+    ///>
+    /// As is reading one.
+    ///<C++
+    void LoadJournal(char const*const path)
+    {
+        if (!path)
+            return;
+
+        FILE* f = fopen(path, "rb");
+        if (!f)
+            return;
+
+        std::vector<JournalEntry> j;
+
+        const size_t sz = 1024;
+        char buffer[sz];
+        while (fgets(buffer, sz, f))
+        {
+            ///>
+            /// This example is simplistic, as the only journal data that there is
+            /// to be loaded is string data. A following chapter will generaliize
+            /// this mechanism.
+            ///<C++
+            StrView b = lab::Text::Strip({buffer, sz});
+            StrView data_str = lab::Text::ScanForCharacter(b, ':');
+            std::string name{b.curr, size_t(data_str.curr - b.curr)};
+            Data<std::string>* data = new Data<std::string>(std::string{data_str.curr, data_str.sz});
+            j.emplace_back(std::move(JournalEntry(name, data)));
+        }
+
+        fclose(f);
+        ReplayJournal(j);
+    }
     ///>
     /// This version of the constructor also accepts a journal, and replays that
     /// journal on the ApplicationContext to reproduce the state of an original
@@ -350,7 +405,7 @@ public:
         if (ImGui::Button("Quit"))
         {
 ///>
-/// The UI in chapter two is going to utilize the CSP mechanism to do it's work,
+/// The UI in chapter two uses the CSP mechanism to do it's work,
 /// instead of setting variables on the ApplicationContext as it did previously.
 ///<C++
             csp_emit(ac_ptr->csp, "quit", 0);

@@ -1,6 +1,8 @@
 #pragma once
 
 #include <typeindex>
+#include <sstream>
+#include <string>
 
 class TypedData 
 {
@@ -11,6 +13,7 @@ public:
 
     virtual void copy(const TypedData*) = 0;
     virtual TypedData* clone() = 0;
+    virtual std::string to_string() = 0;
 
     const std::type_index type;
 };
@@ -39,6 +42,13 @@ public:
         Data* result = new Data();
         result->_data = _data;
         return result;
+    }
+
+    virtual std::string to_string() override
+    {
+        std::stringstream str;
+        str << _data;
+        return str.str();
     }
 
 private:

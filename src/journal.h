@@ -9,7 +9,11 @@ struct JournalEntry
     : name(str), data(d)
     {
     }
-    JournalEntry(JournalEntry&& rh)
+    JournalEntry(const std::string& str, TypedData* d)
+    : name(str), data(d)
+    {
+    }
+    JournalEntry(JournalEntry&& rh) noexcept
     {
         std::swap(rh.name, name);
         std::swap(rh.data, data);

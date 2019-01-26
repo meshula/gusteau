@@ -24,6 +24,7 @@ TypedData* blackboard_get(Blackboard* b, int id)
     b->values.erase(it);
     return r;
 }
+
 int blackboard_new_entry(Blackboard* b, TypedData* d)
 {
     if (!b)
