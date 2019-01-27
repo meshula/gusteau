@@ -263,7 +263,7 @@ public:
     }
 
     ///>
-    /// Writing a journal is straight forward
+    /// Writing a journal to disk is straight forward
     ///<C++
     void SaveJounal(char const*const path)
     {

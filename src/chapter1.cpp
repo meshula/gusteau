@@ -53,7 +53,30 @@
 #include <cstring>
 #include <memory>
 
-/// The application context manages the lifespan of the objects that make up the system.
+/// The application context manages the lifespan of the objects that make up the 
+/// system.
+///
+/// +--------------------------------------------------
+/// |   APPLICATION CONTEXT
+/// |
+/// |    +-----------------------------------+
+/// |    |___ RENDER CONTEXT ________________|
+/// |    +___________ draw management _______+
+/// |
+/// |    +-----------------------------------+
+/// |    |___ GRAPHICS CONTEXT ______________|
+/// |    +______ window and graphics card ___+
+/// |
+/// |    +-----------------------------------+
+/// |    |___ USER INTERFACE CONTEXT ________|
+/// |    +___________ user interaction ______+
+/// |
+/// |    +-----------------------------------+
+/// |    |___ STATE CONTEXT _________________|
+/// |    +___________ what the program does _+
+/// |
+/// +--------------------------------------------------
+///
 ///
 /// The state context holds the application state. This object is a simple
 /// declaration for the application to hold on to. It will be up to us to sub-class
@@ -109,20 +132,21 @@ public:
 
 // The application context will bundle all the other contexts together.
 ///<C++
-class ApplicationContextBase
+class ApplicationContextBase : public std::enable_shared_from_this<ApplicationContextBase>
 {
 public:
     ApplicationContextBase() {}
     virtual ~ApplicationContextBase() = default;
+    virtual void Init() {}
     virtual void Update() = 0;
     bool join_now = false;
     std::shared_ptr<UIContext> ui;
 };
 ///>
 
-/// Factory functions are used to create contexts. The application's main() is the
-/// one designated owner of the created contexts, since it will outlast all references
-/// to the contexts.
+/// Factory functions are used to create contexts. The application's main() is 
+/// the one designated owner of the created contexts, since it will outlast all 
+//// references to the contexts.
 /// Factory functions are used so that we can fill them in later without having
 /// to rebuild or modify the application itself in any way.
 ///<C++
@@ -207,6 +231,7 @@ int main(int argc, char** argv) try
     std::unique_ptr<GraphicsContext> root_graphics_context(CreateRootGraphicsContext());
     std::shared_ptr<UIContext> ui_context = CreateUIContext(*root_graphics_context.get());
     std::shared_ptr<ApplicationContextBase> app_context(CreateApplicationContext(*root_graphics_context.get(), ui_context));
+    app_context->Init();
 
     std::vector<std::thread> jobs(2);
     jobs.emplace_back(std::thread([app_context]() { StateEngine(app_context); }));
