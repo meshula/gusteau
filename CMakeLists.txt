@@ -51,16 +51,16 @@ target_sources(Gusteau-${CHAPTER} PRIVATE
     src/journal.h
     src/TypedData.h
     src/LabText.h
-    src/imgui/imgui.cpp 
-    src/imgui/imgui.h
-    src/imgui/imgui_draw.cpp 
-    src/imgui/imgui_internal.h
-    src/imgui/imgui_widgets.cpp
-    src/imgui/examples/imgui_impl_glfw.cpp
-    src/imgui/examples/imgui_impl_glfw.h
-    src/imgui/examples/imgui_impl_opengl3.cpp
-    src/imgui/examples/imgui_impl_opengl3.h
-    src/glew/glew.c)
+    third-party/imgui/imgui.cpp 
+    third-party/imgui/imgui.h
+    third-party/imgui/imgui_draw.cpp 
+    third-party/imgui/imgui_internal.h
+    third-party/imgui/imgui_widgets.cpp
+    third-party/imgui/examples/imgui_impl_glfw.cpp
+    third-party/imgui/examples/imgui_impl_glfw.h
+    third-party/imgui/examples/imgui_impl_opengl3.cpp
+    third-party/imgui/examples/imgui_impl_opengl3.h
+    third-party/glew/glew.c)
 
 target_compile_definitions(Gusteau-${CHAPTER} PUBLIC ${USD_DEFINES})
 target_compile_definitions(Gusteau-${CHAPTER} PUBLIC GUSTEAU_${CHAPTER})
@@ -80,19 +80,20 @@ endif()
 target_compile_definitions(Gusteau-${CHAPTER} PUBLIC GLEW_STATIC)
 
 target_include_directories(Gusteau-${CHAPTER} PRIVATE
-    ${GUSTEAU_ROOT}/src/glew/include
+    ${GUSTEAU_ROOT}/third-party/glew/include
     ${GLFW_INCLUDE_DIR}
     ${GUSTEAU_ROOT}/src
-    ${GUSTEAU_ROOT}/src/imgui)
+    ${GUSTEAU_ROOT}/third-party/imgui
+    ${GUSTEAU_ROOT}/third-party)
 
 if (UNIX)
     set(PTHREAD_LIB pthread)
 endif()
 
 target_link_libraries(Gusteau-${CHAPTER} debug
-    ${OPENGL_LIBRARIES} ${GLFW_LIBRARY_RELEASE} ${PTHREAD_LIB})
+    ${OPENGL_LIBRARIES} ${glfw_LIBRARIES} ${PTHREAD_LIB})
 target_link_libraries(Gusteau-${CHAPTER} optimized
-    ${OPENGL_LIBRARIES} ${GLFW_LIBRARY_RELEASE} ${PTHREAD_LIB})
+    ${OPENGL_LIBRARIES} ${glfw_LIBRARIES} ${PTHREAD_LIB})
 
 if (MSVC_IDE)
     # hack to get around the "Debug" and "Release" directories cmake tries to add on Windows
