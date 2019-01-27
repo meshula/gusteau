@@ -30,7 +30,18 @@ add_definitions(${_PXR_CXX_DEFINITIONS})
 set(CMAKE_CXX_FLAGS "${_PXR_CXX_FLAGS} ${CMAKE_CXX_FLAGS}")
 
 find_package(OpenGL REQUIRED)
-find_package(GLFW REQUIRED)
+
+# glfw
+set(GLFW_DIR "third-party/glfw")
+set(GLFW_BUILD_EXAMPLES OFF CACHE INTERNAL "Build the GLFW example programs")
+set(GLFW_BUILD_TESTS OFF CACHE INTERNAL "Build the GLFW test programs")
+set(GLFW_BUILD_DOCS OFF CACHE INTERNAL "Build the GLFW documentation")
+set(GLFW_INSTALL OFF CACHE INTERNAL "Generate installation target")
+add_subdirectory("${GLFW_DIR}")
+
+target_link_libraries(Gusteau-${CHAPTER} "glfw" "${GLFW_LIBRARIES}")
+target_include_directories(Gusteau-${CHAPTER} PRIVATE "${GLFW_DIR}/include")
+target_compile_definitions(Gusteau-${CHAPTER} PRIVATE "GLFW_INCLUDE_NONE")
 
 target_sources(Gusteau-${CHAPTER} PRIVATE 
     src/${CHAPTER}.cpp 
