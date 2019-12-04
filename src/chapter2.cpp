@@ -170,7 +170,7 @@ public:
     ///<C++
     void CreateCSP()
     {
-        csp = csp_parse(csp_ac_src, strlen(csp_ac_src));
+        csp = csp_parse(nullptr, csp_ac_src, strlen(csp_ac_src));
 
         csp_bind_lambda(csp, "append_line", [this](int id)
         {

@@ -110,9 +110,12 @@ struct CSP
     std::mutex process_data_mutex;
 };
 
-CSP* csp_parse(char const*const src, size_t len)
+// merge into an existing csp, or return a new one if supplied with nullptr
+CSP* csp_parse(CSP* csp, char const*const src, size_t len)
 {
-    CSP* csp = new CSP();
+    if (!csp)
+        csp = new CSP();
+
     using namespace lab::Text;
     StrView curr{src, len};
     curr = SkipCommentsAndWhitespace(curr);

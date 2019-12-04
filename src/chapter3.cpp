@@ -56,7 +56,7 @@ public:
 
     ///>
     /// The initialize is split out from the constructor because
-    /// the lambdas will need to crate shared pointers to the 
+    /// the lambdas will need to create shared pointers to the 
     /// ApplicationContext. It's impossible from the constructor
     /// because the shared_pointer won't have been initialized yet.
     virtual void Init() override
@@ -69,7 +69,7 @@ public:
     ///<C++
     void CreateCSP()
     {
-        csp = csp_parse(csp_ac_src, strlen(csp_ac_src));
+        csp = csp_parse(nullptr, csp_ac_src, strlen(csp_ac_src));
 
         /// The execution of actions becomes complicated by the introduction of
         /// undo. The first consideration is that we mustn't keep references to
@@ -334,7 +334,7 @@ public:
     {
         auto app = reinterpret_cast<ApplicationContext*>(&ac);
 
-        ImGui::Text("Hello Chapter 2");
+        ImGui::Text("Hello Chapter 3");
         if (ImGui::Button("Quit"))
         {
             csp_emit(app->csp, "quit", 0);
