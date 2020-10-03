@@ -112,7 +112,7 @@ void test_csp()
         CLOCK2 = (tick -> (tock -> CLOCK2 "clock2_tocked") "ticked")
     )csp";
 
-    CSP* csp_clock_sample = csp_parse(csp_clock_sample_src, strlen(csp_clock_sample_src));
+    CSP* csp_clock_sample = csp_parse(nullptr, csp_clock_sample_src, strlen(csp_clock_sample_src));
 
     csp_bind_lambda(csp_clock_sample, "ticked", [](int){ printf("tick\n"); });
     csp_bind_lambda(csp_clock_sample, "clock2_tocked", [](int){ printf("tock\n"); });
