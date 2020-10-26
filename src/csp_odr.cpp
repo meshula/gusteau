@@ -11,7 +11,7 @@ char* csp_src = R"csp(
 
 int main() try
 {
-    CSP* csp = csp_parse(csp_src, strlen(csp_src));
+    CSP* csp = csp_parse(nullptr, csp_src, strlen(csp_src));
     std::cout << "Parsed " << csp->processes.size() << " processes\n";
     for (auto& i : csp->processes)
     {

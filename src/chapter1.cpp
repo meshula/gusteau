@@ -542,7 +542,7 @@ public:
         : UIContext(gc, window_name, width, height)
         {}
 
-    virtual void Run(ApplicationContext& ac) override
+    virtual void Run(ApplicationContextBase& ac) override
     {
         ImGui::Text("Hello world");
         if (ImGui::Button("Quit"))
@@ -552,9 +552,9 @@ public:
     }
 };
 
-std::unique_ptr<UIContext> CreateUIContext(GraphicsContext& gc)
+std::shared_ptr<UIContext> CreateUIContext(GraphicsContext& gc)
 {
-    auto ui = std::make_unique<GusteauChapter1UI>(gc, "gusteau", 1024, 1024);
+    auto ui = std::make_shared<GusteauChapter1UI>(gc, "gusteau", 1024, 1024);
     return ui;
 }
 ///>
