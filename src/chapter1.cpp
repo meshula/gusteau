@@ -1,9 +1,33 @@
 
-
-/// Setting up build systems is unnecessarily complicated. IDEs expose lots of 
-/// individual settings in mysterious locations that can vary from release to
-/// release. Command line build systems are plagued by poor documentation, ad hoc
-/// scripting languages, and a relative lack of portability between platforms.
+///>
+/// Gusteau, Anyone can Code
+/// Chapter One
+///-------------------------------------------------------------------------------
+///
+/// This book is all about writing simple, clear, and robust applications in C++.
+/// The first chapter sets up a basic windows user interface and prints Hello
+/// World. The popular frameworks GLEW, GLFW, and Dear Imgui are organized into
+/// a simple structre that forms the basis for the rest of the chapters in this 
+/// book. 
+/// 
+/// Chapter two introduces Hoare's Communicating Sequential Processes, and the
+/// application is extended to a simple calculator implemented in terms of CSP.
+/// 
+/// Chapter three introduces the concept of journalled transactions, and the
+/// calculator is extended with an undo/redo stack.
+///
+/// The organizing conceit of this book is that the book is readable from 
+/// beginning to end in natural order, and the book is also executable code.
+/// In order that the concepts are introduced in a logical and easy to
+/// understand order, various idioms such as factories, engines, and simple
+/// forward declarations are used to introduce concepts that are expanded
+/// later.
+/// 
+/// Setting up build systems seems unnecessarily complicated in general. IDEs
+/// expose lots of individual settings in mysterious locations that can vary from 
+/// release to release. Command line build systems are plagued by poor 
+/// documentation, ad hoc scripting languages, and a relative lack of portability 
+/// between platforms.
 ///
 /// The focus of this book is on the architecture of our program, not on how it
 /// is built. In that spirit, cmake has been selected as the simultaneously least 
@@ -42,11 +66,11 @@
 ///
 /// When cmake completes go ahead and build the resulting project.
 ///
-///
-/// Separate the state of the program from the user interface
-/// Separate rendering from the state of the program
-/// Program state should be updated via a channel
-
+/// todos -
+/// - Separate the state of the program from the user interface
+/// - Separate rendering from the state of the program
+/// - Program state should be updated via a channel
+///<C++
 #include <deque>
 #include <functional>
 #include <string>
@@ -55,9 +79,16 @@
 
 /// The application context manages the lifespan of the objects that make up the 
 /// system.
-///
+///<C++
+class ApplicationContextBase;
+
+///>
 /// +--------------------------------------------------
 /// |   APPLICATION CONTEXT
+/// |
+/// |    +-----------------------------------+
+/// |    |___ STATE CONTEXT _________________|
+/// |    +___________ what the program does _+
 /// |
 /// |    +-----------------------------------+
 /// |    |___ RENDER CONTEXT ________________|
@@ -70,10 +101,6 @@
 /// |    +-----------------------------------+
 /// |    |___ USER INTERFACE CONTEXT ________|
 /// |    +___________ user interaction ______+
-/// |
-/// |    +-----------------------------------+
-/// |    |___ STATE CONTEXT _________________|
-/// |    +___________ what the program does _+
 /// |
 /// +--------------------------------------------------
 ///
@@ -90,7 +117,7 @@ public:
 };
 
 /// The render context will hold information necessary for rendering a
-/// scene; such as information on accessing scene state, camera parameters,
+/// scene; that might include information on accessing scene state, camera parameters,
 /// cached values, and so on.
 ///<C++
 class RenderContext
@@ -101,8 +128,8 @@ public:
 };
 ///>
 /// Various systems are going to need access to the graphics context for
-/// rendering. Subclasses of the GraphicsContext object will contain 
-/// things such necessary to enable sharing of resources like textures and
+/// rendering. Subclasses of the GraphicsContext object might contain 
+/// things necessary to enable sharing of resources like textures and
 /// vertex data between graphic context objects.
 ///<C++
 class GraphicsContext
@@ -113,9 +140,7 @@ public:
 };
 ///>
 
-class ApplicationContextBase;
-
-/// The UI Context will know about the user interface state.
+// The UI Context will know about the user interface state.
 ///<C++
 class UIContext
 {
@@ -130,7 +155,11 @@ public:
 };
 ///>
 
-// The application context will bundle all the other contexts together.
+/// The application context will bundle all the other contexts together.
+/// Engines will be introduced shortly to oerate on each of the contexts.
+/// The UIEngine is special, in that it manages the lifespan of the application.
+/// as such, a pointer to its data is retained in the application's context
+/// base. The reason for that will become clear shortly.
 ///<C++
 class ApplicationContextBase : public std::enable_shared_from_this<ApplicationContextBase>
 {
@@ -233,15 +262,15 @@ int main(int argc, char** argv) try
     std::shared_ptr<ApplicationContextBase> app_context(CreateApplicationContext(*root_graphics_context.get(), ui_context));
     app_context->Init();
 
-    std::vector<std::thread> jobs(2);
-    jobs.emplace_back(std::thread([app_context]() { StateEngine(app_context); }));
-    jobs.emplace_back(std::thread([app_context]() { RenderEngine(app_context); }));
+    std::vector<std::thread> engines(2);
+    engines.emplace_back(std::thread([app_context]() { StateEngine(app_context); }));
+    engines.emplace_back(std::thread([app_context]() { RenderEngine(app_context); }));
 
     UIEngine(app_context);
 
-    for (auto& j : jobs)
-        if (j.joinable())
-            j.join();
+    for (auto& e: engines)
+        if (engines.joinable())
+            engines.join();
 
     return 0;
 }

@@ -114,13 +114,27 @@ void test_csp()
 
     CSP* csp_clock_sample = csp_parse(nullptr, csp_clock_sample_src, strlen(csp_clock_sample_src));
 
+    ///>
+    /// Now that the csp script is parsed, bind the named behaviors to lambdas.
+    ///<C++
     csp_bind_lambda(csp_clock_sample, "ticked", [](int){ printf("tick\n"); });
     csp_bind_lambda(csp_clock_sample, "clock2_tocked", [](int){ printf("tock\n"); });
+
+    ///>
+    /// emit some events with default ids, enqueing them for processing
+    ///<C++
     csp_emit(csp_clock_sample, "tick", {});
     csp_emit(csp_clock_sample, "foo", {});   // an event in an unknown alphabet
     csp_emit(csp_clock_sample, "tock", {});
     csp_emit(csp_clock_sample, "tick", {});
     csp_emit(csp_clock_sample, "tock", {});
+
+    ///>
+    /// process all the vents enqueued until now. The csp queue is threadsafe
+    /// so update can be called at any time, as can csp_emit. binding lambdas
+    /// is safe as well, so the behavior of the csp system is safe to 
+    /// modify at any time.
+    ///<C++
     csp_update(csp_clock_sample);
 }
 ///>
