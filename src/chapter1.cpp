@@ -18,14 +18,12 @@
 ///
 /// The organizing conceit of this book is that the book is readable from 
 /// beginning to end in natural order, and the book is also executable code.
-/// In order that the concepts are introduced in a logical and easy to
-/// understand order, various idioms such as factories, engines, and simple
-/// forward declarations are used to introduce concepts that are expanded
-/// later.
+/// To support that notion, various idioms such as factories, engines, and
+/// forward declarations are used to introduce concepts that are expanded later.
 /// 
 /// Setting up build systems seems unnecessarily complicated in general. IDEs
-/// expose lots of individual settings in mysterious locations that can vary from 
-/// release to release. Command line build systems are plagued by poor 
+/// expose huge numbers of individual settings in mysterious locations that can 
+/// vary from release to release. Command line build systems are plagued by poor 
 /// documentation, ad hoc scripting languages, and a relative lack of portability 
 /// between platforms.
 ///
@@ -53,13 +51,9 @@
 /// cd gusteau-build-chapter1
 /// cmake ../gusteau -DCHAPTER=chapter1
 /// ~~~~
-/// Note that for this to work properly on Windows, the development command line
+/// For this to work properly on Windows, the development command line
 /// must match the build you want. So run the Development Tools for x64 command
-/// line that came with the version of visual studio you are using. The command
-/// line for cmake on windows will actually need to look like -
-/// ~~~~
-/// cmake ..\gusteau -G "Visual Studio 15 2017 Win64"
-/// ~~~~
+/// line that came with the version of visual studio you are using.
 ///
 /// Similarly on mac, you'll need to use xcode-select to pick the compiler you
 /// want cmake to use.
