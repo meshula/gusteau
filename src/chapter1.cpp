@@ -7,7 +7,7 @@
 /// This book is all about writing simple, clear, and robust applications in C++.
 /// The first chapter sets up a basic windows user interface and prints Hello
 /// World. The popular frameworks GLEW, GLFW, and Dear Imgui are organized into
-/// a simple structre that forms the basis for the rest of the chapters in this 
+/// a simple structure that forms the basis for the rest of the chapters in this 
 /// book. 
 /// 
 /// Chapter two introduces Hoare's Communicating Sequential Processes, and the
