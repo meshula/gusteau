@@ -1,7 +1,7 @@
 
 /// Chapter 3 - Undo and Redo
 ///
-/// The build of chapter3 will be similar to that of chapter 1.
+/// The build of Chapter 3 will be similar to that of Chapter 1.
 ///
 /// ~~~~
 /// stddoc < chapter3.cpp > chapter3.html
@@ -9,15 +9,15 @@
 /// cd gusteau-build-chapter3
 /// cmake ../gusteau -DCHAPTER=chapter3 -G "generator"
 /// ~~~~
-/// where "generator" might be "Visual Studio 15 2017 Win64" for visual studio,
-/// "Xcode" for xcode, or "Make" for make.
+/// where "generator" might be "Visual Studio 15 2017 Win64" for Visual Studio,
+/// "Xcode" for Xcode, or "Make" for Make.
 ///
-/// When cmake completes build and run the resulting project.
+/// When CMake completes, build and run the resulting project.
 ///
 /// The structure of Chapter 3 is very similar to that of Chapter 1.
-/// Communicating Sequential Process techniques will allow the user interface
-/// to modify the state of the application context. The DSL introduced in
-/// chapter 2 will be used here as well.
+/// Communicating Sequential Process (CSP) techniques will allow the user
+/// interface to modify the state of the application context. The DSL
+/// introduced in Chapter 2 will be used here as well.
 ///
 #define LABTEXT_ODR
 #include "LabText.h"
@@ -93,8 +93,8 @@ public:
 /// and the reverse operation. The inverse of pushing a value on the stack is to pop it.
 /// Previously, the journal was a simple record of an action.  Now,
 /// we are going to explore more complex actions, with more complex undo
-/// behavior. So a more sophisticated journal is required. Since the applicaiton
-/// is multi-threaded, many actions could occur concurrently. In the case of a
+/// behavior. So a more sophisticated journal is required. Since the application
+/// is multi-threaded, many actions could occur concurrently. In the case of
 /// an action with a simple undo, that's no big deal, since one action is paired
 /// with one undo action. In a moment though, we will see an undo action that
 /// requires multiple steps that have to go together. We introduce therefore
