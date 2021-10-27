@@ -375,7 +375,7 @@ std::unique_ptr<GraphicsContext> CreateRootGraphicsContext()
 }
 
 /// The UIContext will contain the main user interface window.
-/// We're going to use ImGui, so ImGui's context information will be
+/// We're going to use Dear ImGui, so ImGui's context information will be
 /// stored here.
 /// ImGui doesn't yet have public support for managing multiple contexts,
 /// so this implementation reaches into the internals to accomplish that.
