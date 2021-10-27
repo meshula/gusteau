@@ -5,7 +5,7 @@
 ///-------------------------------------------------------------------------------
 ///
 /// This book is all about writing simple, clear, and robust applications in C++.
-/// The first chapter sets up a basic windows user interface and prints Hello
+/// The first chapter sets up a basic Windows user interface and prints Hello
 /// World. The popular frameworks GLEW, GLFW, and Dear Imgui are organized into
 /// a simple structure that forms the basis for the rest of the chapters in this 
 /// book. 
@@ -28,13 +28,13 @@
 /// between platforms.
 ///
 /// The focus of this book is on the architecture of our program, not on how it
-/// is built. In that spirit, cmake has been selected as the simultaneously least 
+/// is built. In that spirit, CMake has been selected as the simultaneously least
 /// broken and most portable of the command line systems as it is a meta-build
 /// system - it builds reasonably functional build scripts in a platform's native
-/// dialect, whether it be make files, xcode projects, or visual studio solutions.
+/// dialect, whether it be Make files, Xcode projects, or Visual Studio solutions.
 ///
 /// We won't concern ourselves at the moment with the contents of the provided
-/// cmake script, but to get started let's do two things.
+/// CMake script, but to get started let's do two things.
 ///
 /// First, let's generate a version of this file readable in a browser. We'll need
 /// stddoc, from here: https://github.com/r-lyeh/stddoc.c  Compile it, and then at 
@@ -44,7 +44,7 @@
 /// ~~~~
 /// Then open chapter1.html in a browser. Next, at a development command line, go to 
 /// a directory you'd like to do your build in. I suggest a sibling to the gusteau
-/// directory,and type
+/// directory, and type
 ///
 /// ~~~~
 /// mkdir gusteau-build-chapter1
@@ -53,12 +53,12 @@
 /// ~~~~
 /// For this to work properly on Windows, the development command line
 /// must match the build you want. So run the Development Tools for x64 command
-/// line that came with the version of visual studio you are using.
+/// line that came with the version of Visual Studio you are using.
 ///
-/// Similarly on mac, you'll need to use xcode-select to pick the compiler you
-/// want cmake to use.
+/// Similarly on Mac, you'll need to use xcode-select to pick the compiler you
+/// want CMake to use.
 ///
-/// When cmake completes go ahead and build the resulting project.
+/// When CMake completes go ahead and build the resulting project.
 ///
 /// todos -
 /// - Separate the state of the program from the user interface
@@ -134,7 +134,7 @@ public:
 };
 ///>
 
-// The UI Context will know about the user interface state.
+/// The UI context will know about the user interface state.
 ///<C++
 class UIContext
 {
@@ -150,9 +150,9 @@ public:
 ///>
 
 /// The application context will bundle all the other contexts together.
-/// Engines will be introduced shortly to oerate on each of the contexts.
+/// Engines will be introduced shortly to operate on each of the contexts.
 /// The UIEngine is special, in that it manages the lifespan of the application.
-/// as such, a pointer to its data is retained in the application's context
+/// As such, a pointer to its data is retained in the application's context
 /// base. The reason for that will become clear shortly.
 ///<C++
 class ApplicationContextBase : public std::enable_shared_from_this<ApplicationContextBase>
@@ -169,7 +169,7 @@ public:
 
 /// Factory functions are used to create contexts. The application's main() is 
 /// the one designated owner of the created contexts, since it will outlast all 
-//// references to the contexts.
+/// references to the contexts.
 /// Factory functions are used so that we can fill them in later without having
 /// to rebuild or modify the application itself in any way.
 ///<C++
@@ -186,8 +186,8 @@ std::shared_ptr<ApplicationContextBase> CreateApplicationContext(GraphicsContext
 ///<C++
 class ApplicationContext : public ApplicationContextBase
 {
-public:	
-    ApplicationContext(GraphicsContext& gc,std::shared_ptr<UIContext> ui_) 
+public: 
+    ApplicationContext(GraphicsContext& gc, std::shared_ptr<UIContext> ui_) 
         : root_graphics_context(gc)
     {
         ui = ui_;
@@ -195,7 +195,7 @@ public:
 
     ~ApplicationContext() = default;
 
-    virtual void Update() override {}    // doesn't need to do anything for chapter 1
+    virtual void Update() override {}    // doesn't need to do anything for Chapter 1
 
     GraphicsContext& root_graphics_context;
     StateContext state;
@@ -223,7 +223,7 @@ std::shared_ptr<ApplicationContextBase> CreateApplicationContext(GraphicsContext
 ///<C++
 void UIEngine(std::shared_ptr<ApplicationContextBase>);
 ///>
-/// The Render Engine will draw things
+/// The Render Engine will draw things.
 ///<C++
 void RenderEngine(std::shared_ptr<ApplicationContextBase>);
 ///>
@@ -232,7 +232,7 @@ void RenderEngine(std::shared_ptr<ApplicationContextBase>);
 void StateEngine(std::shared_ptr<ApplicationContextBase>);
 ///>
 /// The main function will own the root graphics context and application context
-/// for the duration of the executation of the application. We'll signal this
+/// for the duration of the execution of the application. We'll signal this
 /// intent to the reader of the code by either instantiating these objects on the
 /// stack, or holding them in a unique_ptr. We'll only pass references to these
 /// objects, further signalling to the reader that the objects are not owned.
@@ -263,8 +263,8 @@ int main(int argc, char** argv) try
     UIEngine(app_context);
 
     for (auto& e: engines)
-        if (engines.joinable())
-            engines.join();
+        if (e.joinable())
+            e.join();
 
     return 0;
 }
@@ -291,7 +291,7 @@ static void error_callback(int error, const char* description)
     fprintf(stderr, "Error %d: %s\n", error, description);
 }
 
-/// THe glfw flags should be set consistently and to a relatively modern version,
+/// The GLFW flags should be set consistently and to a relatively modern version,
 /// so a function will be provided up front for that.
 /// Detail is going to maintain a root graphics context that all GL contexts
 /// can share. This will be useful later when more than one rendering system
@@ -359,6 +359,7 @@ public:
         if (_window)
             glfwDestroyWindow(_window);
     }
+
     GLFWwindow* _window{};
 };
 
@@ -374,7 +375,7 @@ std::unique_ptr<GraphicsContext> CreateRootGraphicsContext()
 }
 
 /// The UIContext will contain the main user interface window.
-/// We're going to use Imgui, so Imgui's context information will be
+/// We're going to use Dear ImGui, so ImGui's context information will be
 /// stored here.
 /// ImGui doesn't yet have public support for managing multiple contexts,
 /// so this implementation reaches into the internals to accomplish that.
@@ -546,10 +547,10 @@ void UIEngine(std::shared_ptr<ApplicationContextBase> context)
     }
 }
 
-/// The State Engine for chapter 1 doesn't have to do anything.
+/// The State Engine for Chapter 1 doesn't have to do anything.
 void StateEngine(std::shared_ptr<ApplicationContextBase>) {}
 
-/// The Render Engine for chapter 1 doesn't have to do anything.
+/// The Render Engine for Chapter 1 doesn't have to do anything.
 void RenderEngine(std::shared_ptr<ApplicationContextBase>) {}
 
 #ifdef GUSTEAU_chapter1
@@ -582,4 +583,4 @@ std::shared_ptr<UIContext> CreateUIContext(GraphicsContext& gc)
 }
 ///>
 
-#endif
+#endif // GUSTEAU_chapter1

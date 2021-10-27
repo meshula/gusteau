@@ -21,8 +21,8 @@ command line, type
 stddoc < main.cpp > main.html
 ~~~~
 Then open main.html in a browser. Next, at a development command line, go to 
-a directoy you'd like to do your build in, I susggest a sibling to the gusteau
-directory,and type
+a directoy you'd like to do your build in, I suggest a sibling to the gusteau
+directory, and type
 
 ~~~~
 mkdir gusteau-build-chapter-1
@@ -122,7 +122,7 @@ of the application itself
 ~~~C++
 class ApplicationContext
 {
-public:	
+public: 
 	ApplicationContext() = default;
 	~ApplicationContext() = default;
 
@@ -221,9 +221,8 @@ with a GL context that can be shared with other GL windows and offscreen
 render contexts, to enable sharing of resources like textures and
 vertex data.
 ~~~C++
-class GraphicsContext::Detail
+struct GraphicsContext::Detail
 {
-public:
    Detail() = default;
    Detail(Detail&&) = default;
    ~Detail()
@@ -236,7 +235,7 @@ public:
    GLFWwindow* _window{};
 };
 ~~~
-The UIContext will contain the main user interface winow.
+The UIContext will contain the main user interface window.
 ~~~C++
 struct UIContext::Detail
 {

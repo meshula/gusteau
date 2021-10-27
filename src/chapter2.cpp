@@ -17,7 +17,7 @@
 #undef LABTEXT_ODR
 #include "chapter1.cpp"
 
-/// The build of chapter2 will be similar to that of chapter 1.
+/// The build of Chapter 2 will be similar to that of Chapter 1.
 ///
 /// ~~~~
 /// stddoc < chapter2.cpp > chapter2.html
@@ -25,10 +25,10 @@
 /// cd gusteau-build-chapter2
 /// cmake ../gusteau -DCHAPTER=chapter2 -G "generator"
 /// ~~~~
-/// where "generator" might be "Visual Studio 15 2017 Win64" for visual studio,
-/// "Xcode" for xcode, or "Make" for make.
+/// where "generator" might be "Visual Studio 15 2017 Win64" for Visual Studio,
+/// "Xcode" for Xcode, or "Make" for Make.
 ///
-/// When cmake completes build and run the resulting project.
+/// When CMake completes, build and run the resulting project.
 ///
 /// A primary goal of a modern interactive tool is that the tool always feels
 /// responsive; a user will never wonder if the tool is locked up, or why things
@@ -52,7 +52,7 @@
 /// as occam, libthread, Go, CHP, and more. The goals of CSP were to 
 /// 
 /// * describe interesting applications, 
-/// * be efficient in implementation
+/// * be efficient in implementation,
 /// * be useful in specification, design, and verification of systems.
 /// 
 /// CSP is a calculus of interaction.
@@ -171,7 +171,7 @@ char* csp_ac_src = R"csp(
 ///<C++
 class ApplicationContext : public ApplicationContextBase
 {
-public:	
+public: 
     ApplicationContext(GraphicsContext& gc, std::shared_ptr<UIContext> ui_) 
     : root_graphics_context(gc)
     , blackboard(new Blackboard())
